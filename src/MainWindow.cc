@@ -46,8 +46,6 @@ EVT_MENU(wxID_ABOUT, MainWindow::AboutClick)
 EVT_BUTTON(STITCH_SCANS, MainWindow::StitchScans)
 EVT_BUTTON(VIEW_MERGED, MainWindow::ViewMerged)
 EVT_BUTTON(GROUND, MainWindow::SetGroundPlane)
-EVT_BUTTON(ID1, MainWindow::ClickFirstID)
-EVT_BUTTON(ID2, MainWindow::ClickSecondID)
 EVT_TIMER(TIMER_ID, MainWindow::OnTimer)
 EVT_CLOSE(MainWindow::OnQuit2)
 END_EVENT_TABLE()
@@ -166,18 +164,8 @@ MainWindow::MainWindow()
     m_scan1 = new wxStaticText(m_GL_panel1, wxID_ANY, wxT(" First scan"));
     m_scan2 = new wxStaticText(m_GL_panel2, wxID_ANY, wxT(" Second scan"));
 
-    // m_id1 = new wxStaticText(m_GL_panel1, ID1, wxT("ID: "));
-    // m_id2 = new wxStaticText(m_GL_panel2, ID2, wxT("ID: "));
-    m_id1 = new wxButton(m_GL_panel1, ID1, wxT("ID: "), wxDefaultPosition,
-        wxDefaultSize, wxBU_EXACTFIT);
-    m_id2 = new wxButton(m_GL_panel2, ID2, wxT("ID: "), wxDefaultPosition,
-        wxDefaultSize, wxBU_EXACTFIT);
-
     m_hbox1->Add(m_scan1, 1, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL);
-    m_hbox1->Add(m_id1, 0, wxALIGN_RIGHT);
-
     m_hbox2->Add(m_scan2, 1, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL);
-    m_hbox2->Add(m_id2, 0, wxALIGN_RIGHT);
 
     vbox1->Add(m_hbox1, 0, wxEXPAND);
     vbox1->Add(m_canvas1, 1, wxEXPAND);
@@ -214,9 +202,6 @@ MainWindow::MainWindow()
 
     Global.ID_1 = -1;
     Global.ID_2 = -1;
-
-    m_id1->Disable();
-    m_id2->Disable();
 
     m_save1->Enable(false);
     save2->Enable(false);
@@ -305,157 +290,6 @@ void MainWindow::OnResize(wxSizeEvent& event)
     }
 }
 
-void MainWindow::LoadPointsFromRiscanPro(const char* filename,
-    vector<Point>& Points)
-{
-    FILE* fp = fopen(filename, "r");
-
-    if (fp == NULL) {
-        wxMessageDialog* dial = new wxMessageDialog(
-            NULL, wxString::Format(wxT("Error opening '%s' for reading"), filename),
-            wxT("Exclamation"), wxOK);
-
-        dial->ShowModal();
-        dial->Destroy();
-
-        return;
-    }
-
-    int count = 0;
-    Point P;
-
-    Points.clear();
-
-    // Due to the way C++ STL vector allocates memory, it can end up allocating a
-    // lot of unused memory. To remedy this, the number of points are guessed
-    // based on average bytes per point and the memory is allocated before hand.
-    // If there are less points than predicted we just truncate the extra vector
-    // elements.
-
-    // Average bytes per line ~ 72 bytes
-    // Get the m_file size using wxFile
-    wxFile m_file;
-
-    wxString f(filename, wxConvUTF8);
-
-    m_file.Open(f, wxFile::read);
-
-    if (!m_file.IsOpened()) {
-        wxMessageDialog* dial = new wxMessageDialog(
-            NULL, wxString::Format(wxT("Error opening '%s' for reading"), filename),
-            wxT("Exclamation"), wxOK);
-
-        dial->ShowModal();
-        dial->Destroy();
-
-        return;
-    }
-
-    int guess = m_file.Length() / 72;
-
-    Points.resize(guess);
-
-    m_status->AppendText(wxT("Loading ") + wxString(filename, wxConvUTF8) + wxT(" "));
-
-    char line[1024];
-
-    // Check for a valid header
-    if (fgets(line, sizeof(line), fp) == NULL) {
-        perror("fgets");
-        exit(-1);
-    }
-
-    wxString header(
-        wxT("ID X[m] Y[m] Z[m] Range[m] Theta[deg] Phi[deg] R[0..1] G[0..1] "
-            "B[0..1] Intensity[0..1]"));
-    wxString line2(line, wxConvUTF8);
-
-    if (line2.Trim() != header) {
-        wxMessageDialog* dial = new wxMessageDialog(
-            NULL,
-            wxString::Format(wxT("'%s' does not have a valid header"), filename),
-            wxT("Exclamation"), wxOK);
-
-        dial->ShowModal();
-        dial->Destroy();
-
-        return;
-    }
-
-    while (fgets(line, sizeof(line), fp)) {
-        int dumi;
-        float r, g, b, dumf;
-
-        sscanf(line, "%d %f %f %f %f %f %f %f %f %f %f", &dumi, &P.x, &P.y, &P.z,
-            &dumf, &dumf, &dumf, &r, &g, &b, &dumf);
-
-        P.r = r * 255;
-        P.g = g * 255;
-        P.b = b * 255;
-
-        if (count < guess)
-            Points[count] = P;
-        else
-            Points.push_back(P);
-
-        count++;
-
-        if (count % 100000 == 0) {
-            m_status->AppendText(wxT("."));
-
-            // Allows screen to update instead of waiting for m_file to load
-            while (m_app->Pending())
-                m_app->Dispatch();
-        }
-    }
-
-    if (count < guess)
-        Points.erase(Points.begin() + count, Points.end());
-
-    m_status->AppendText(wxString::Format(wxT(" %d points\n"), count));
-}
-
-void MainWindow::LoadPoints(const char* filename, vector<Point>& Points,
-    int& ID)
-{
-    gzFile in = gzopen(filename, "rb");
-
-    if (in == NULL) {
-        wxMessageDialog* dial = new wxMessageDialog(
-            NULL, wxString::Format(wxT("Error opening '%s' for reading"), filename),
-            wxT("Exclamation"), wxOK);
-        dial->ShowModal();
-        dial->Destroy();
-
-        return;
-    }
-
-    int count = 0;
-    Point P;
-
-    Points.clear();
-
-    m_status->AppendText(wxT("Loading ") + wxString::FromAscii(filename) + wxT(" "));
-
-    while (gzread(in, (char*)&P, sizeof(Point))) {
-        ID = P.ID;
-
-        Points.push_back(P);
-
-        count++;
-
-        if (count % 100000 == 0) {
-            m_status->AppendText(wxT("."));
-
-            // Allows screen to update instead of waiting for m_file to load
-            while (m_app->Pending())
-                m_app->Dispatch();
-        }
-    }
-
-    m_status->AppendText(wxString::Format(wxT(" %d points\n"), count));
-}
-
 bool MainWindow::OpenScan(bool first)
 {
     wxString caption;
@@ -466,7 +300,7 @@ bool MainWindow::OpenScan(bool first)
         caption = wxT("Please choose the second scan");
     }
 
-    wxString wildcard = wxT("All supported formats|*.ply;*.raw;*.raw.gz|PLY|*.ply|Compressed RAW|*.raw.gz|RAW|*.raw");
+    wxString wildcard = wxT("PLY|*.ply");
     wxString dum = wxT("");
 
     wxFileDialog dialog(this, caption, dum, dum, wildcard, wxFD_OPEN | wxFD_CHANGE_DIR);
@@ -476,7 +310,7 @@ bool MainWindow::OpenScan(bool first)
 
         wxString path, name, ext;
 
-        wxSplitPath(dialog.GetPath(), &path, &name, &ext);
+        wxFileName::SplitPath(dialog.GetPath(), &path, &name, &ext);
 
         if (ext == wxT("ply")) {
             if (first) {
@@ -484,23 +318,15 @@ bool MainWindow::OpenScan(bool first)
             } else {
                 LoadPLYPoints(dialog.GetPath().ToStdString(), Global.scan2);
             }
-        } else {
-            if (first) {
-                LoadPoints(dialog.GetPath().ToAscii(), Global.scan1, Global.ID_1);
-            } else {
-                LoadPoints(dialog.GetPath().ToAscii(), Global.scan2, Global.ID_2);
-            }
         }
 
         if (first) {
             m_scan1->SetLabel(dialog.GetPath());
-            m_id1->SetLabel(wxString::Format(wxT("ID: %d"), Global.ID_1));
 
             m_canvas1->LoadPoints(Global.scan1);
             m_canvas1->Enable();
         } else {
             m_scan2->SetLabel(dialog.GetPath());
-            m_id2->SetLabel(wxString::Format(wxT("ID: %d"), Global.ID_2));
 
             m_canvas2->LoadPoints(Global.scan2);
             m_canvas2->Enable();
@@ -526,7 +352,6 @@ void MainWindow::OpenFirstScan(wxCommandEvent& event)
 
         random_shuffle(Global.table1.begin(), Global.table1.end(), MyRandRange);
 
-        m_id1->Enable();
         m_save1->Enable(true);
 
         if (Global.ID_1 >= 0 && Global.ID_2 >= 0) // Both scans loaded
@@ -548,7 +373,6 @@ void MainWindow::OpenSecondScan(wxCommandEvent& event)
 
         random_shuffle(Global.table2.begin(), Global.table2.end(), MyRandRange);
 
-        m_id2->Enable();
         save2->Enable(true);
 
         if (Global.ID_1 >= 0 && Global.ID_2 >= 0) // Both scans loaded
@@ -609,12 +433,12 @@ void MainWindow::OnTimer(wxTimerEvent& event)
 
 void MainWindow::StitchScans(wxCommandEvent& event)
 {
-    ICP _ICP;
+    ICP icp;
     Matrix InitialTransform(4, 4), ICPTransform(4, 4), TmpMatrix(4, 4);
-    ICPDialog* _Dialog = new ICPDialog(NULL);
+    ICPDialog* dialog = new ICPDialog(NULL);
 
-    if (_Dialog->ShowModal() == wxID_CANCEL) {
-        _Dialog->Destroy();
+    if (dialog->ShowModal() == wxID_CANCEL) {
+        dialog->Destroy();
         return;
     }
 
@@ -654,15 +478,15 @@ void MainWindow::StitchScans(wxCommandEvent& event)
     while (m_app->Pending())
         m_app->Dispatch();
 
-    if (_Dialog->UseICP()) {
+    if (dialog->UseICP()) {
         // Iterative Closest Point Algorithm
-        _ICP.SetwxTextCtrl(m_status);
-        _ICP.SetwxApp(m_app);
-        _ICP.SetLTS(_Dialog->GetLTS());
-        _ICP.SetMaxPoints(_Dialog->GetMaxPoints());
-        _ICP.SetPoints(Global.scan1, Global.scan2,
-            _Dialog->GetInitialOutlierDist());
-        _ICP.Seteps(_Dialog->Geteps());
+        icp.SetwxTextCtrl(m_status);
+        icp.SetwxApp(m_app);
+        icp.SetLTS(dialog->GetLTS());
+        icp.SetMaxPoints(dialog->GetMaxPoints());
+        icp.SetPoints(Global.scan1, Global.scan2,
+            dialog->GetInitialOutlierDist());
+        icp.Seteps(dialog->Geteps());
 
         double LastMSE = 1e5;
 
@@ -672,38 +496,38 @@ void MainWindow::StitchScans(wxCommandEvent& event)
 
         while (true) {
             m_status->AppendText(wxString::Format(
-                wxT("\nITERATION %d/%d\n"), count + 1, _Dialog->GetIterations()));
+                wxT("\nITERATION %d/%d\n"), count + 1, dialog->GetIterations()));
             m_status->AppendText(wxT("-------------------\n"));
 
             while (m_app->Pending())
                 m_app->Dispatch();
 
-            _ICP.Run(TmpMatrix);
+            icp.Run(TmpMatrix);
 
-            if (_ICP.GetMSE() > LastMSE) {
+            if (icp.GetMSE() > LastMSE) {
                 m_status->AppendText(wxString::Format(
-                    wxT("No improvement in MSE: %f, exiting\n"), _ICP.GetMSE()));
+                    wxT("No improvement in MSE: %f, exiting\n"), icp.GetMSE()));
                 break;
             }
 
-            double change = (LastMSE - _ICP.GetMSE()) / LastMSE;
+            double change = (LastMSE - icp.GetMSE()) / LastMSE;
 
             ICPTransform = TmpMatrix * ICPTransform;
 
-            if (change < _Dialog->MinEPS())
+            if (change < dialog->MinEPS())
                 break;
 
             m_status->AppendText(
-                wxString::Format(wxT("MSE: %e change: %e\n"), _ICP.GetMSE(), change));
+                wxString::Format(wxT("MSE: %e change: %e\n"), icp.GetMSE(), change));
 
             while (m_app->Pending())
                 m_app->Dispatch();
 
-            LastMSE = _ICP.GetMSE();
+            LastMSE = icp.GetMSE();
 
             count++;
 
-            if (count >= _Dialog->GetIterations())
+            if (count >= dialog->GetIterations())
                 break;
         }
     }
@@ -787,7 +611,7 @@ void MainWindow::SaveAs(vector<Point>& p, bool first, bool m_save_matrix)
     if (dialog.ShowModal() == wxID_OK) {
         wxString filename, path, name, ext;
 
-        wxSplitPath(dialog.GetPath(), &path, &name, &ext);
+        wxFileName::SplitPath(dialog.GetPath(), &path, &name, &ext);
 
         filename = dialog.GetPath();
 
@@ -863,57 +687,6 @@ void MainWindow::Help(wxCommandEvent& event)
     m_help->Destroy();
 }
 
-void MainWindow::ChangeID(bool first)
-{
-    int currentID;
-
-    if (first)
-        currentID = Global.ID_1;
-    else
-        currentID = Global.ID_2;
-
-    while (true) {
-        wxTextEntryDialog* entry = new wxTextEntryDialog(
-            this, wxT("Please enter a new ID for this scan between 0 and 255."),
-            wxT(""), wxString::Format(wxT("%d"), currentID), wxOK);
-
-        entry->ShowModal();
-        entry->Destroy();
-
-        currentID = atoi(entry->GetValue().ToAscii());
-
-        if (currentID < 0 || currentID > 255) {
-            wxMessageDialog* dial = new wxMessageDialog(NULL,
-                wxT("You have entered an invalid range for the "
-                    "ID. Please try again."),
-                wxT("Error"), wxOK | wxICON_ERROR);
-            dial->ShowModal();
-            dial->Destroy();
-        } else
-            break;
-    }
-
-    if (first) {
-        for (unsigned int i = 0; i < Global.scan1.size(); i++)
-            Global.scan1[i].ID = currentID;
-
-        Global.ID_1 = currentID;
-
-        m_id1->SetLabel(wxString::Format(wxT("ID: %d"), currentID));
-    } else {
-        for (unsigned int i = 0; i < Global.scan2.size(); i++)
-            Global.scan2[i].ID = currentID;
-
-        Global.ID_2 = currentID;
-
-        m_id2->SetLabel(wxString::Format(wxT("ID: %d"), currentID));
-    }
-}
-
-void MainWindow::ClickFirstID(wxCommandEvent& event) { ChangeID(true); }
-
-void MainWindow::ClickSecondID(wxCommandEvent& event) { ChangeID(false); }
-
 void MainWindow::AboutClick(wxCommandEvent& event)
 {
     About* about = new About(this);
@@ -958,7 +731,7 @@ void MainWindow::SaveMatrix(wxCommandEvent& event)
 void MainWindow::SaveMatrix2(const wxString& dialog_path)
 {
     wxString path, name, ext;
-    wxSplitPath(dialog_path, &path, &name, &ext);
+    wxFileName::SplitPath(dialog_path, &path, &name, &ext);
 
     wxString full_path = dialog_path;
 
@@ -980,13 +753,13 @@ void MainWindow::SaveMatrix2(const wxString& dialog_path)
 
     wxString filename, filename1, filename2;
 
-    wxSplitPath(dialog_path, &path, &filename, &ext);
+    wxFileName::SplitPath(dialog_path, &path, &filename, &ext);
     filename += wxT(".") + ext;
 
-    wxSplitPath(m_scan1->GetLabel(), &path, &filename1, &ext);
+    wxFileName::SplitPath(m_scan1->GetLabel(), &path, &filename1, &ext);
     filename1 += wxT(".") + ext;
 
-    wxSplitPath(m_scan2->GetLabel(), &path, &filename2, &ext);
+    wxFileName::SplitPath(m_scan2->GetLabel(), &path, &filename2, &ext);
     filename2 += wxT(".") + ext;
 
     fprintf(OutMatrix, "# Register3D transformation matrix\n");

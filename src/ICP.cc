@@ -424,7 +424,7 @@ void ICP::SetPoints(vector<Point>& P1, vector<Point>& P2,
             m_points2.push_back(filtered2[i]);
     }
 
-    printf("Number of points after downsampling: %i\n", m_points2.size());
+    std::cout << "Number of points after downsampling: " << m_points2.size() << "\n";
 
     if (m_text) {
         m_text->AppendText(wxT("100%\n"));
@@ -432,8 +432,9 @@ void ICP::SetPoints(vector<Point>& P1, vector<Point>& P2,
             wxT("Number of points after downsampling/filtering: %d\n"),
             m_points2.size()));
 
-        while (m_app->Pending())
+        while (m_app->Pending()) {
             m_app->Dispatch();
+        }
     }
 
     Point1DB.Free();

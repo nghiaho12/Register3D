@@ -57,6 +57,8 @@ private:
     bool SelectNearestControlPoint(int mousex, int mousey);
 
 private:
+    wxGLContext m_context;
+
     bool m_is_first_scan; // first or second
 
     // OpenGL related stuff

@@ -1,5 +1,6 @@
 #include "GLCanvas.h"
 #include <algorithm>
+#include <sstream>
 #include <float.h>
 
 #include "Misc.h"
@@ -18,8 +19,8 @@ END_EVENT_TABLE()
 int attrib_list[] = { WX_GL_RGBA, WX_GL_DOUBLEBUFFER };
 
 GLCanvas::GLCanvas(wxWindow* parent, wxWindowID id, ModeType mode)
-    : wxGLCanvas(parent, id, wxDefaultPosition, wxSize(200, 200), 0,
-          wxString(wxT("")), attrib_list)
+    : wxGLCanvas(parent, id, attrib_list, wxDefaultPosition, wxSize(200, 200)),
+    m_context(this)
 {
     m_move_point_on = false;
     m_last_mouse_x = -1;
@@ -50,10 +51,7 @@ void GLCanvas::OnPaint(wxPaintEvent& event)
 {
     wxPaintDC dc(this);
 
-    if (!GetContext())
-        return;
-
-    SetCurrent();
+    SetCurrent(m_context);
 
     if (!m_init_GL) {
         InitGL();
@@ -61,7 +59,6 @@ void GLCanvas::OnPaint(wxPaintEvent& event)
     }
 
     Draw();
-    ;
 }
 
 void GLCanvas::OnMouse(wxMouseEvent& event)
@@ -77,10 +74,7 @@ void GLCanvas::OnMouse(wxMouseEvent& event)
     if (!m_is_focused)
         return;
 
-    if (!GetContext())
-        return;
-
-    SetCurrent();
+    SetCurrent(m_context);
 
     SetFocus();
 
@@ -93,16 +87,18 @@ void GLCanvas::OnMouse(wxMouseEvent& event)
             AddControlPoints((int)event.GetX(), (int)event.GetY());
 
             if (m_text) {
-                if (m_is_first_scan)
-                    m_text->AppendText(wxString::Format(
-                        wxT("First scan: registration point %d added at (%f, %f, %f)\n"),
-                        m_control_points.size(), m_control_points.back().x,
-                        m_control_points.back().y, m_control_points.back().z));
-                else
-                    m_text->AppendText(wxString::Format(
-                        wxT("Second scan: registration point %d added at (%f, %f, %f)\n"),
-                        m_control_points.size(), m_control_points.back().x,
-                        m_control_points.back().y, m_control_points.back().z));
+                std::stringstream ss;
+
+                if (m_is_first_scan) {
+                    ss << "First scan: registration point ";
+                } else {
+                    ss << "Second scan: registration point ";
+                }
+
+                const auto &p = m_control_points.back();
+                ss << m_control_points.size() << " added at (" << p.x << ", " << p.y << ", " << p.z << ")\n";
+
+                m_text->AppendText(ss.str());
 
                 GetGrandParent()->Refresh();
             }
@@ -170,10 +166,11 @@ void GLCanvas::OnMouse(wxMouseEvent& event)
 
 void GLCanvas::OnResize(wxSizeEvent& event)
 {
-    if (!GetContext())
+    if (!m_init_GL) {
         return;
+    }
 
-    SetCurrent();
+    SetCurrent(m_context);
 
     int w, h;
 
@@ -186,13 +183,11 @@ void GLCanvas::OnResize(wxSizeEvent& event)
 
 void GLCanvas::OnKeyDown(wxKeyEvent& event)
 {
-    if (!m_is_focused)
+    if (!m_is_focused) {
         return;
+    }
 
-    if (!GetContext())
-        return;
-
-    SetCurrent();
+    SetCurrent(m_context);
 
     // GetKeyCode(), returns uppercase code for letters
 
@@ -545,6 +540,8 @@ bool GLCanvas::AddControlPoints(int mousex, int mousey)
 
     OGLWrapper::Get2Dto3DwithoutZ(mousex, mousey, z, P.x, P.y, P.z);
 
+    std::cout << "z: " << z << "\n";
+
     if (z < 1.0 && m_control_points.size() < 4) {
         m_control_points.push_back(Point(P.x, P.y, P.z));
 
@@ -553,23 +550,6 @@ bool GLCanvas::AddControlPoints(int mousex, int mousey)
         // Search for the minimum depth
         float min_depth = 1.0;
         bool found = false;
-
-        /*
-                    int radius = 25;
-
-                    for(int y = mousey - radius; y < mousey + radius; y++)
-                    for(int x = mousex - radius; x < mousex + radius; x++)
-                    {
-                            OGLWrapper::Get2Dto3DwithoutZ(x, y, z, P.x, P.y,
-       P.z);
-
-                            if(z < min_depth)
-                            {
-                                    min_depth = z;
-                                    found = true;
-                            }
-                    }
-    */
 
         for (int radius = 1; radius < 50; radius++) {
             found = false;
@@ -608,8 +588,9 @@ bool GLCanvas::AddControlPoints(int mousex, int mousey)
                 }
             }
 
-            if (found)
+            if (found) {
                 break;
+            }
         }
 
         if (found) {
@@ -762,10 +743,7 @@ bool GLCanvas::GetIsFocused() { return m_is_focused; }
 
 void GLCanvas::LoadPoints(vector<Point> points)
 {
-    if (!GetContext())
-        return; // should do something smarter
-
-    SetCurrent();
+    SetCurrent(m_context);
 
     random_shuffle(points.begin(), points.end(), MyRandRange);
 
@@ -1030,10 +1008,11 @@ void GLCanvas::LoadPointsForFastview(vector<Point>& p1, vector<Point>& p2)
 
 bool GLCanvas::Draw()
 {
-    if (!GetContext())
+    if (!IsShown()) {
         return false;
+    }
 
-    SetCurrent();
+    SetCurrent(m_context);
 
     if (m_mode == STITCH_MODE)
         RenderScene();

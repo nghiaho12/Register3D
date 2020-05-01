@@ -25,12 +25,7 @@ private:
     void OnResize(wxSizeEvent& event);
     void OnTimer(wxTimerEvent& event);
 
-    void LoadPoints(const char* filename, std::vector<Point>& Points, int& ID);
-    void LoadPointsFromRiscanPro(const char* filename, std::vector<Point>& Points);
     bool OpenScan(bool first);
-    void ChangeID(bool first);
-    void ClickFirstID(wxCommandEvent& event);
-    void ClickSecondID(wxCommandEvent& event);
     void OpenFirstScan(wxCommandEvent& event);
     void OpenSecondScan(wxCommandEvent& event);
     void StitchScans(wxCommandEvent& event);
@@ -55,7 +50,6 @@ private:
     wxBoxSizer *m_hbox1, *m_hbox2;
     wxSplitterWindow *m_splitter_window_h, *m_splitter_window_v;
     wxStaticText *m_scan1, *m_scan2;
-    wxButton *m_id1, *m_id2;
     wxTextCtrl* m_status;
     wxButton *m_register_btn, *m_viewmerge_btn, *m_ground_btn;
     wxTimer* m_timer;

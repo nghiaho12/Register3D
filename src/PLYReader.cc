@@ -153,14 +153,6 @@ bool LoadPLYPoints(const std::string& file, std::vector<Point>& points)
 
     std::vector<char> bytes(property_bytes);
 
-    std::cout << x_offset << "\n";
-    std::cout << y_offset << "\n";
-    std::cout << z_offset << "\n";
-
-    std::cout << red_offset << "\n";
-    std::cout << green_offset << "\n";
-    std::cout << blue_offset << "\n";
-
     for (int i=0; i < num_vertex; i++) {
         auto &p = points[i];
 

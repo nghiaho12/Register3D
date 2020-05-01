@@ -30,16 +30,10 @@ extern PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glCheckFramebufferStatusEXT;
 // Some convenient OpenGL wrappers
 class OGLWrapper {
 public:
-    static void CreateTexture(GLuint* tex, int width, int height);
-    // static void LoadTextureFromFile(char *Filename, GLuint *tex, int width, int
-    // height, int &compressed_size); static void LoadTextureFromData(Pixel *image,
-    // GLuint *tex, int width, int height, int &compressed_size);
 
     // OpenGL extensions
     static void InitGLExtensions();
     static void CheckFrameBufferStatus();
-    static void CreateFBO(GLuint* fb, GLuint* rb, GLuint* tex, int width,
-        int height);
     static void CreateVBO(GLuint* VertexID, GLuint* ColourID,
         const float* VertexArray, const float* ColourArray,
         unsigned int size);

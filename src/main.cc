@@ -16,7 +16,7 @@ bool app::OnInit()
     // Used to load icon, and help file
     wxString path, name, ext;
     wxString t(wxApp::argv[0]);
-    wxSplitPath(t, &path, &name, &ext);
+    wxFileName::SplitPath(t, &path, &name, &ext);
 
     if (path == wxT(""))
         path = wxGetCwd();
