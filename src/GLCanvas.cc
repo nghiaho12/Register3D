@@ -89,7 +89,7 @@ void GLCanvas::OnMouse(wxMouseEvent& event)
             if (m_text) {
                 std::stringstream ss;
 
-                if (m_is_first_scan) {
+                if (m_is_first_point_cloud) {
                     ss << "First scan: registration point ";
                 } else {
                     ss << "Second scan: registration point ";
@@ -296,33 +296,33 @@ void GLCanvas::RenderScene()
             // Bring back to normal operations
             glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
         } else {
-            if (m_is_first_scan && m_params.scan1.size()) {
+            if (m_is_first_point_cloud && m_params.point1.size()) {
                 glEnableClientState(GL_COLOR_ARRAY);
                 glEnableClientState(GL_VERTEX_ARRAY);
 
                 if (m_use_mono_colour) {
                     glColorPointer(3, GL_UNSIGNED_BYTE, 0, &m_params.false_colour1[0]);
                 } else {
-                    glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_params.scan1[0].r);
+                    glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_params.point1[0].r);
                 }
 
-                glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_params.scan1[0]);
-                glDrawArrays(GL_POINTS, 0, m_params.scan1.size());
+                glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_params.point1[0]);
+                glDrawArrays(GL_POINTS, 0, m_params.point1.size());
 
                 glDisableClientState(GL_COLOR_ARRAY);
                 glDisableClientState(GL_VERTEX_ARRAY);
-            } else if (!m_is_first_scan && m_params.scan2.size()) {
+            } else if (!m_is_first_point_cloud && m_params.point2.size()) {
                 glEnableClientState(GL_COLOR_ARRAY);
                 glEnableClientState(GL_VERTEX_ARRAY);
 
                 if (m_use_mono_colour) {
                     glColorPointer(3, GL_UNSIGNED_BYTE, 0, &m_params.false_colour2[0]);
                 } else {
-                    glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_params.scan2[0].r);
+                    glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_params.point2[0].r);
                 }
 
-                glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_params.scan2[0]);
-                glDrawArrays(GL_POINTS, 0, m_params.scan2.size());
+                glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_params.point2[0]);
+                glDrawArrays(GL_POINTS, 0, m_params.point2.size());
 
                 glDisableClientState(GL_COLOR_ARRAY);
                 glDisableClientState(GL_VERTEX_ARRAY);
@@ -332,8 +332,8 @@ void GLCanvas::RenderScene()
 
                     glBegin(GL_POINTS);
 
-                    for (size_t i = 0; i < m_params.scan2.size(); i++) {
-                        Point& P = m_params.scan2[i];
+                    for (size_t i = 0; i < m_params.point2.size(); i++) {
+                        Point& P = m_params.point2[i];
 
                         float dx = P.x - m_spheres[0].x;
                         float dy = P.y - m_spheres[0].y;
@@ -352,8 +352,8 @@ void GLCanvas::RenderScene()
 
                     glBegin(GL_POINTS);
 
-                    for (size_t i = 0; i < m_params.scan2.size(); i++) {
-                        Point& P = m_params.scan2[i];
+                    for (size_t i = 0; i < m_params.point2.size(); i++) {
+                        Point& P = m_params.point2[i];
 
                         float dx1 = P.x - m_spheres[0].x;
                         float dy1 = P.y - m_spheres[0].y;
@@ -374,7 +374,7 @@ void GLCanvas::RenderScene()
 
                     glEnd();
                 } // end assistive circle rendering
-            } // end scan1/scan2 rendering
+            } // end point1/point2 rendering
         }
 
         for (size_t i = 0; i < m_control_points.size(); i++) {
@@ -788,9 +788,9 @@ void GLCanvas::LoadPoints(std::vector<Point> points)
     if (v == NULL || mono_colour == NULL || full_colour == NULL || false_colour == NULL) {
         wxMessageDialog* dial = new wxMessageDialog(
             NULL,
-            wxT("Unable to create memory! You should close this program and free "
-                "memory before proceeding."),
-            wxT("Error"), wxOK | wxICON_ERROR);
+            "Unable to create memory! You should close this program and free "
+                "memory before proceeding.",
+            "Error", wxOK | wxICON_ERROR);
         dial->ShowModal();
         dial->Destroy();
 
@@ -878,11 +878,11 @@ void GLCanvas::LoadPoints(std::vector<Point> points)
     if (err) {
         wxMessageDialog* dial = new wxMessageDialog(
             NULL,
-            wxT("OpenGL error encountered while trying to load points onto the "
+            "OpenGL error encountered while trying to load points onto the "
                 "GPU! This will probably affect rendering. Maybe you don't have "
                 "enough memory or Vertex Buffer Object is not supported by your "
-                "GPU."),
-            wxT("Error"), wxOK | wxICON_ERROR);
+                "GPU.",
+            "Error", wxOK | wxICON_ERROR);
         dial->ShowModal();
         dial->Destroy();
 
@@ -897,7 +897,7 @@ void GLCanvas::LoadPoints(std::vector<Point> points)
     delete[] false_colour;
 }
 
-void GLCanvas::SetIsFirstScan(bool set) { m_is_first_scan = set; }
+void GLCanvas::SetIsFirstScan(bool set) { m_is_first_point_cloud = set; }
 
 void GLCanvas::InitGL()
 {
@@ -908,7 +908,7 @@ void GLCanvas::InitGL()
         err_msg.append(reinterpret_cast<const char*>(glewGetErrorString(err)));
 
         wxMessageDialog* dial = new wxMessageDialog(
-            NULL, err_msg, wxT("Error"), wxOK | wxICON_ERROR);
+            NULL, err_msg, "Error", wxOK | wxICON_ERROR);
         dial->ShowModal();
         dial->Destroy();
 
@@ -934,7 +934,7 @@ std::vector<Point>& GLCanvas::GetControlPoints() { return m_control_points; }
 
 void GLCanvas::RenderMerged()
 {
-    if (m_params.scan1.size() == 0 && m_params.scan2.size() == 0) {
+    if (m_params.point1.size() == 0 && m_params.point2.size() == 0) {
         return;
     }
 
@@ -951,33 +951,33 @@ void GLCanvas::RenderMerged()
             glColor3f(1.0, 0.0, 0.0);
         }
 
-        glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_scan1_fast[0].r);
-        glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_scan1_fast[0]);
-        glDrawArrays(GL_POINTS, 0, m_scan1_fast.size());
+        glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_point1_decimated[0].r);
+        glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_point1_decimated[0]);
+        glDrawArrays(GL_POINTS, 0, m_point1_decimated.size());
 
         if (m_use_mono_colour) {
             glColor3f(0.0, 1.0, 0.0);
         }
 
-        glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_scan2_fast[0].r);
-        glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_scan2_fast[0]);
-        glDrawArrays(GL_POINTS, 0, m_scan2_fast.size());
+        glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_point2_decimated[0].r);
+        glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_point2_decimated[0]);
+        glDrawArrays(GL_POINTS, 0, m_point2_decimated.size());
     } else {
         if (m_use_mono_colour) {
             glColor3f(1.0, 0.0, 0.0);
         }
 
-        glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_params.scan1[0].r);
-        glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_params.scan1[0]);
-        glDrawArrays(GL_POINTS, 0, m_params.scan1.size());
+        glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_params.point1[0].r);
+        glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_params.point1[0]);
+        glDrawArrays(GL_POINTS, 0, m_params.point1.size());
 
         if (m_use_mono_colour) {
             glColor3f(0.0, 1.0, 0.0);
         }
 
-        glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_params.scan2[0].r);
-        glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_params.scan2[0]);
-        glDrawArrays(GL_POINTS, 0, m_params.scan2.size());
+        glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_params.point2[0].r);
+        glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_params.point2[0]);
+        glDrawArrays(GL_POINTS, 0, m_params.point2.size());
     }
 
     // Axis
@@ -1000,23 +1000,23 @@ void GLCanvas::LoadPointsForFastview(std::vector<Point>& p1, std::vector<Point>&
     reverseable_shuffle_forward(p2, m_params.table2);
 
     if (p1.size() < MAX_POINTS_ON_GPU) {
-        m_scan1_fast.resize(p1.size());
+        m_point1_decimated.resize(p1.size());
     } else {
-        m_scan1_fast.resize(MAX_POINTS_ON_GPU);
+        m_point1_decimated.resize(MAX_POINTS_ON_GPU);
     }
 
     if (p2.size() < MAX_POINTS_ON_GPU) {
-        m_scan2_fast.resize(p2.size());
+        m_point2_decimated.resize(p2.size());
     } else {
-        m_scan2_fast.resize(MAX_POINTS_ON_GPU);
+        m_point2_decimated.resize(MAX_POINTS_ON_GPU);
     }
 
-    for (size_t i = 0; i < m_scan1_fast.size(); i++) {
-        m_scan1_fast[i] = p1[i];
+    for (size_t i = 0; i < m_point1_decimated.size(); i++) {
+        m_point1_decimated[i] = p1[i];
     }
 
-    for (size_t i = 0; i < m_scan2_fast.size(); i++) {
-        m_scan2_fast[i] = p2[i];
+    for (size_t i = 0; i < m_point2_decimated.size(); i++) {
+        m_point2_decimated[i] = p2[i];
     }
 
     reverseable_shuffle_backward(p1, m_params.table1);

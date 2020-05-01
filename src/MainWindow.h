@@ -29,13 +29,12 @@ private:
     void OpenSecondScan(wxCommandEvent& event);
     void StitchScans(wxCommandEvent& event);
     void ViewMerged(wxCommandEvent& event);
-    void SetGroundPlane(wxCommandEvent& event);
     void SaveAs(std::vector<Point>& p, bool first, bool m_save_matrix);
     void SaveAsFirstAndMatrix(wxCommandEvent& event);
     void SaveAsFirst(wxCommandEvent& event);
     void SaveAsSecond(wxCommandEvent& event);
     void SaveMatrix(wxCommandEvent& event);
-    void SaveMatrix2(const wxString& dialog_path);
+    void SaveMatrixToFile(const wxString& dialog_path);
     void Help(wxCommandEvent& event);
     void AboutClick(wxCommandEvent& event);
     void EnableAllExceptStatus(bool enable = true);
@@ -45,7 +44,7 @@ private:
 
     wxMenuBar* m_menubar;
     wxMenu *m_file, *m_help;
-    wxMenuItem *m_save1, *m_save1_matrix, *save2, *m_save_matrix;
+    wxMenuItem *m_save_first_point_cloud_and_matrix, *m_save_matrix;
     wxBoxSizer* m_vbox;
     wxPanel *m_GL_panel1, *m_GL_panel2;
     wxBoxSizer *m_hbox1, *m_hbox2;

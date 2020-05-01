@@ -58,7 +58,7 @@ private:
     wxGLContext m_context;
     Params &m_params;
 
-    bool m_is_first_scan; // first or second
+    bool m_is_first_point_cloud; // first or second
 
     // OpenGL related stuff
     ZPR m_ZPR;
@@ -68,8 +68,8 @@ private:
     GLuint m_colour_array_id;
     GLuint m_mono_colour_array_id;
     GLuint m_false_colour_id;
-    std::vector<Point> m_scan1_fast;
-    std::vector<Point> m_scan2_fast;
+    std::vector<Point> m_point1_decimated;
+    std::vector<Point> m_point2_decimated;
     GLUquadric* m_quadric;
     bool m_init_GL;
     bool m_reshape;

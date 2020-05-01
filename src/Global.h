@@ -13,11 +13,8 @@ struct RGB {
 };
 
 struct Params {
-    std::vector<Point> scan1, scan2;
-
-    int ID_1, ID_2;
+    std::vector<Point> point1, point2;
     std::vector<size_t> table1, table2; // Allows a reverseable version of random_shuffle()
-    wxString pwd;
 
     // False colour palette
     std::vector<RGB> false_colour1, false_colour2; // for scan1, scan2

@@ -7,7 +7,7 @@ EVT_BUTTON(wxID_HOME, HelpDialog::Home)
 END_EVENT_TABLE()
 
 HelpDialog::HelpDialog(wxWindow* parent)
-    : wxDialog(parent, wxID_ANY, wxT("Help"), wxDefaultPosition, wxDefaultSize,
+    : wxDialog(parent, wxID_ANY, "Help", wxDefaultPosition, wxDefaultSize,
           wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER | wxMAXIMIZE_BOX | wxMINIMIZE_BOX)
 {
     m_vbox = new wxBoxSizer(wxVERTICAL);

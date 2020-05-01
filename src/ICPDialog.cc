@@ -19,7 +19,7 @@ int ICPDialog::GetIterations() { return atoi(m_entry4->GetValue().ToAscii()); }
 float ICPDialog::Geteps() { return atof(m_entry5->GetValue().ToAscii()); }
 
 ICPDialog::ICPDialog(wxWindow* parent)
-    : wxDialog(parent, wxID_ANY, wxString(wxT("Iterative Closest Point")))
+    : wxDialog(parent, wxID_ANY, "Iterative Closest Point")
 {
     m_pane = new wxPanel(this, wxID_ANY);
 
@@ -30,33 +30,33 @@ ICPDialog::ICPDialog(wxWindow* parent)
 
     table->Add(
         new wxStaticText(m_pane, wxID_ANY,
-            wxT("Maximum points per scan\n(WARNING: 1 million "
-                "points uses about 200MB of memory):")),
+            "Maximum points per scan\n(WARNING: 1 million "
+                "points uses about 200MB of memory):"),
         0, wxALIGN_CENTER_VERTICAL);
     m_entry1 = new wxTextCtrl(m_pane, wxID_ANY);
     table->Add(m_entry1, 0, wxALIGN_TOP);
 
     table->Add(new wxStaticText(m_pane, wxID_ANY,
-                   wxT("Initial outlier distance (metres):")),
+                   "Initial outlier distance (metres):"),
         0, wxALIGN_CENTER_VERTICAL);
     m_entry2 = new wxTextCtrl(m_pane, wxID_ANY);
     table->Add(m_entry2, 0, wxALIGN_TOP);
 
     table->Add(
         new wxStaticText(m_pane, wxID_ANY,
-            wxT("Least Trimmed Square percentage (0.0 to 1.0):")),
+            "Least Trimmed Square percentage (0.0 to 1.0):"),
         0, wxALIGN_CENTER_VERTICAL);
     m_entry3 = new wxTextCtrl(m_pane, wxID_ANY);
     table->Add(m_entry3, 0, wxALIGN_TOP);
 
     table->Add(
-        new wxStaticText(m_pane, wxID_ANY, wxT("Maximum number of iterations:")),
+        new wxStaticText(m_pane, wxID_ANY, "Maximum number of iterations:"),
         0, wxALIGN_CENTER_VERTICAL);
     m_entry4 = new wxTextCtrl(m_pane, wxID_ANY);
     table->Add(m_entry4, 0, wxALIGN_TOP);
 
     table->Add(new wxStaticText(m_pane, wxID_ANY,
-                   wxT("Minimum change between iterations:")),
+                   "Minimum change between iterations:"),
         0, wxALIGN_CENTER_VERTICAL);
     m_eps = new wxTextCtrl(m_pane, wxID_ANY);
     table->Add(m_eps, 0, wxALIGN_TOP);
@@ -64,13 +64,13 @@ ICPDialog::ICPDialog(wxWindow* parent)
     table->Add(
         new wxStaticText(
             m_pane, wxID_ANY,
-            wxT("Nearest neighbour search error\n[0..1] (0 = exact match):")),
+            "Nearest neighbour search error\n[0..1] (0 = exact match):"),
         0, wxALIGN_CENTER_VERTICAL);
     m_entry5 = new wxTextCtrl(m_pane, wxID_ANY);
     table->Add(m_entry5, 0, wxALIGN_TOP);
 
     m_check1 = new wxCheckBox(
-        m_pane, wxID_ANY, wxT("Run ICP (or just apply the initial transform)"));
+        m_pane, wxID_ANY, "Run ICP (or just apply the initial transform)");
     m_check1->SetValue(m_pane);
     m_vbox->Add(m_check1, 0, wxALL, 10);
 
@@ -82,12 +82,12 @@ ICPDialog::ICPDialog(wxWindow* parent)
     m_vbox->Add(hbox, 0, wxALIGN_CENTER);
 
     // Some default values
-    m_entry1->SetValue(wxT("1000000"));
-    m_entry2->SetValue(wxT("1.0"));
-    m_entry3->SetValue(wxT("0.9"));
-    m_entry4->SetValue(wxT("20"));
-    m_entry5->SetValue(wxT("0"));
-    m_eps->SetValue(wxT("0.01"));
+    m_entry1->SetValue("1000000");
+    m_entry2->SetValue("1.0");
+    m_entry3->SetValue("0.9");
+    m_entry4->SetValue("20");
+    m_entry5->SetValue("0");
+    m_eps->SetValue("0.01");
 
     m_pane->SetSizer(m_vbox);
     m_vbox->SetSizeHints(this);
@@ -99,8 +99,8 @@ void ICPDialog::OK(wxCommandEvent& event)
 {
     // Do some checking on the values
     if (GetMaxPoints() <= 0) {
-        wxMessageDialog* dial = new wxMessageDialog(NULL, wxT("Maximum points must be greater than 0"),
-            wxT("Exclamation"), wxOK);
+        wxMessageDialog* dial = new wxMessageDialog(NULL, "Maximum points must be greater than 0",
+            "Exclamation", wxOK);
         dial->ShowModal();
 
         return;
@@ -108,8 +108,8 @@ void ICPDialog::OK(wxCommandEvent& event)
 
     if (GetInitialOutlierDist() < 0) {
         wxMessageDialog* dial = new wxMessageDialog(
-            NULL, wxT("Initial outlier distance must be greater or equal to 0"),
-            wxT("Exclamation"), wxOK);
+            NULL, "Initial outlier distance must be greater or equal to 0",
+            "Exclamation", wxOK);
         dial->ShowModal();
 
         return;
@@ -117,8 +117,8 @@ void ICPDialog::OK(wxCommandEvent& event)
 
     if (GetLTS() < 0 || GetLTS() > 1.0) {
         wxMessageDialog* dial = new wxMessageDialog(
-            NULL, wxT("Least Trimmed Square must be between 0 and 1.0"),
-            wxT("Exclamation"), wxOK);
+            NULL, "Least Trimmed Square must be between 0 and 1.0",
+            "Exclamation", wxOK);
         dial->ShowModal();
 
         return;
@@ -126,8 +126,8 @@ void ICPDialog::OK(wxCommandEvent& event)
 
     if (GetIterations() <= 0) {
         wxMessageDialog* dial = new wxMessageDialog(
-            NULL, wxT("Max number of iterations must be greater than 0"),
-            wxT("Exclamation"), wxOK);
+            NULL, "Max number of iterations must be greater than 0",
+            "Exclamation", wxOK);
         dial->ShowModal();
 
         return;
@@ -135,8 +135,8 @@ void ICPDialog::OK(wxCommandEvent& event)
 
     if (Geteps() < 0 || Geteps() > 1.0) {
         wxMessageDialog* dial = new wxMessageDialog(
-            NULL, wxT("Nearest neighbour search error must be between 0 and 1.0"),
-            wxT("Exclamation"), wxOK);
+            NULL, "Nearest neighbour search error must be between 0 and 1.0",
+            "Exclamation", wxOK);
         dial->ShowModal();
 
         return;
@@ -144,8 +144,8 @@ void ICPDialog::OK(wxCommandEvent& event)
 
     if (MinEPS() < 0 || MinEPS() > 1.0) {
         wxMessageDialog* dial = new wxMessageDialog(
-            NULL, wxT("Min change between iterations must be between 0 and 1.0"),
-            wxT("Exclamation"), wxOK);
+            NULL, "Min change between iterations must be between 0 and 1.0",
+            "Exclamation", wxOK);
         dial->ShowModal();
 
         return;

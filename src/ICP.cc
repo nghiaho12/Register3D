@@ -370,7 +370,7 @@ void ICP::SetPoints(std::vector<Point>& P1, std::vector<Point>& P2,
     }
 
     if (m_text) {
-        m_text->AppendText(wxT("100%\n"));
+        m_text->AppendText("100%\n");
 
         std::stringstream ss;
         ss << "Number of points after downsampling/filtering: " << m_points2.size() << "\n";
