@@ -434,7 +434,7 @@ void MainWindow::OnTimer(wxTimerEvent& event)
 void MainWindow::StitchScans(wxCommandEvent& event)
 {
     ICP icp;
-    Matrix InitialTransform(4, 4), ICPTransform(4, 4), TmpMatrix(4, 4);
+    Eigen::Matrix4d InitialTransform, ICPTransform, TmpMatrix;
     ICPDialog* dialog = new ICPDialog(NULL);
 
     if (dialog->ShowModal() == wxID_CANCEL) {
@@ -446,9 +446,9 @@ void MainWindow::StitchScans(wxCommandEvent& event)
     m_canvas2->Disable();
 
     // Load identity matrix for T
-    InitialTransform.LoadIdentity();
-    m_transform.LoadIdentity();
-    ICPTransform.LoadIdentity();
+    InitialTransform.setIdentity();
+    ICPTransform.setIdentity();
+    m_transform.setIdentity();
 
     // Pre-registration
     PointOP::GetTransform(m_canvas1->GetControlPoints(),
@@ -457,10 +457,11 @@ void MainWindow::StitchScans(wxCommandEvent& event)
     m_status->AppendText(
         wxT("Initial transformation from the selected points\n"));
 
-    for (int i = 0; i < InitialTransform.GetRow(); i++) {
-        for (int j = 0; j < InitialTransform.GetCol(); j++)
+    for (int i = 0; i < InitialTransform.rows(); i++) {
+        for (int j = 0; j < InitialTransform.cols(); j++) {
             m_status->AppendText(
-                wxString::Format(wxT("%4.3f "), InitialTransform.Get(i, j)));
+                wxString::Format(wxT("%4.3f "), InitialTransform(i, j)));
+        }
 
         m_status->AppendText(wxT("\n"));
     }
@@ -540,12 +541,13 @@ void MainWindow::StitchScans(wxCommandEvent& event)
 
     m_status->AppendText(wxT("Final matrix transformation\n"));
 
-    for (int i = 0; i < m_transform.GetRow(); i++) {
-        for (int j = 0; j < m_transform.GetCol(); j++)
-            m_status->AppendText(wxString::Format(wxT("%e "), m_transform.Get(i, j)));
+    for (int i = 0; i < m_transform.rows(); i++) {
+        for (int j = 0; j < m_transform.cols(); j++) {
+            m_status->AppendText(wxString::Format(wxT("%e "), m_transform(i, j)));
+        }
 
         m_status->AppendText(wxT("\n"));
-    };
+    }
 
     m_canvas1->GetControlPoints().clear();
     m_canvas2->GetControlPoints().clear();
@@ -735,8 +737,9 @@ void MainWindow::SaveMatrix2(const wxString& dialog_path)
 
     wxString full_path = dialog_path;
 
-    if (ext != wxT("matrix"))
+    if (ext != wxT("matrix")) {
         full_path = dialog_path + wxT(".matrix");
+    }
 
     FILE* OutMatrix = fopen(full_path.ToAscii(), "w+");
 
@@ -769,9 +772,11 @@ void MainWindow::SaveMatrix2(const wxString& dialog_path)
     fprintf(OutMatrix, "%s\n",
         (const char*)filename2.ToAscii()); // name of scan registered to
 
-    for (int y = 0; y < 4; y++)
-        for (int x = 0; x < 4; x++)
-            fprintf(OutMatrix, "%e\n", m_transform.Get(y, x));
+    for (int y = 0; y < 4; y++) {
+        for (int x = 0; x < 4; x++) {
+            fprintf(OutMatrix, "%e\n", m_transform(y, x));
+        }
+    }
 
     fclose(OutMatrix);
 

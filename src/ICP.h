@@ -4,12 +4,12 @@
 The main TrICP algorithm class. Designed to iteract with the GUI.
 */
 
-#include "ICPPoint.h"
-#include "Matrix.h"
-#include "MyANN.h"
-#include "Point.h"
+#include <Eigen/Dense>
 #include <wx/wx.h>
 
+#include "ICPPoint.h"
+#include "MyANN.h"
+#include "Point.h"
 class ICP {
 public:
     ICP();
@@ -21,7 +21,7 @@ public:
     void SetwxTextCtrl(wxTextCtrl* t); // Used for m_text feedback from ICP
     void SetwxApp(wxApp* a); // Used for m_text feedback from ICP
 
-    void Run(Matrix& Transform);
+    void Run(Eigen::Matrix4d& Transform);
     double GetMSE();
 
 private:

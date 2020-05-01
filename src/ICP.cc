@@ -3,10 +3,10 @@
 #include <iostream>
 #include <numeric>
 #include <sstream>
+#include <Eigen/SVD>
 
 #include "Global.h"
 #include "ICPPoint.h"
-#include "Matrix.h"
 #include "Misc.h"
 #include "Point.h"
 #include "PointOP.h"
@@ -27,22 +27,17 @@ bool ICP::ByDistSq(const ICPPoint& a, const ICPPoint& b)
     return a.dist_sq < b.dist_sq;
 }
 
-void ICP::Run(Matrix& Transform)
+void ICP::Run(Eigen::Matrix4d& Transform)
 {
-    // Make sure Transform Matrix is 4x4
-    if (Transform.GetRow() != 4 || Transform.GetCol() != 4) {
-        fprintf(stderr, "Not a 4x4 matrix\n");
-        exit(1);
-    }
-
     // Some distance statistics
     std::vector<double> DistSq;
 
     if (m_text) {
         m_text->AppendText("Determining square distance to trim at ... ");
 
-        while (m_app->Pending())
+        while (m_app->Pending()) {
             m_app->Dispatch();
+        }
     }
 
     for (size_t i = 0; i < m_points1.size(); i++) {
@@ -77,7 +72,7 @@ void ICP::Run(Matrix& Transform)
         }
     }
 
-    sort(DistSq.begin(), DistSq.end());
+    std::sort(DistSq.begin(), DistSq.end());
 
     size_t pos = (int)(DistSq.size() * m_LTS);
 
@@ -179,22 +174,22 @@ void ICP::Run(Matrix& Transform)
    * FIND OPTIMAL ROTATION USING SVD
    ************************************/
 
-    Matrix H(3, 3), A(3, 1), B(1, 3), C(3, 3), R(3, 3);
-    Matrix U(3, 3), S(3, 3), V(3, 3); // SVD
+    //Matrix H(3, 3), A(3, 1), B(1, 3), C(3, 3), R(3, 3);
+    //Matrix U(3, 3), S(3, 3), V(3, 3); // SVD
 
-    A.Zero();
-    B.Zero();
+    Eigen::Matrix3d H;
 
-    H.LoadIdentity();
+    H.setZero();
 
     if (m_text) {
         m_text->AppendText(wxT("Calculating optimal rotation ... "));
 
-        while (m_app->Pending())
+        while (m_app->Pending()) {
             m_app->Dispatch();
+        }
     }
 
-    for (unsigned int i = 0; i < m_points1.size(); i++) {
+    for (size_t i = 0; i < m_points1.size(); i++) {
         if (i % 100000 == 0) {
             if (m_text) {
                 m_text->AppendText(wxString::Format(wxT("%.0f%% "),
@@ -205,27 +200,21 @@ void ICP::Run(Matrix& Transform)
             }
         }
 
-        if (m_points1[i].dist_sq > trimDist)
+        if (m_points1[i].dist_sq > trimDist) {
             continue;
+        }
 
-        // double dist;
-        // int index;
+        Eigen::Vector3d A, B;
 
-        // ANN_points2p.FindClosest(P, dist, index);
+        A(0) = m_points1[i].x - centroid1.x;
+        A(1) = m_points1[i].y - centroid1.y;
+        A(2) = m_points1[i].z - centroid1.z;
 
-        // cout << (m_points1[i].x - centroid1.x) << " ---- " <<
-        // (m_points1[i].nearest.x - centroid2.x) << endl;
-        A.Set(0, 0, m_points1[i].x - centroid1.x);
-        A.Set(1, 0, m_points1[i].y - centroid1.y);
-        A.Set(2, 0, m_points1[i].z - centroid1.z);
+        B(0) = m_points1[i].nearest.x - centroid2.x;
+        B(1) = m_points1[i].nearest.y - centroid2.y;
+        B(2) = m_points1[i].nearest.z - centroid2.z;
 
-        B.Set(0, 0, m_points1[i].nearest.x - centroid2.x);
-        B.Set(0, 1, m_points1[i].nearest.y - centroid2.y);
-        B.Set(0, 2, m_points1[i].nearest.z - centroid2.z);
-
-        C = A * B;
-
-        H += C;
+        H += A * B.transpose();
     }
 
     if (m_text) {
@@ -236,42 +225,33 @@ void ICP::Run(Matrix& Transform)
         }
     }
 
-    H.SVD(U, S, V);
+    Eigen::JacobiSVD<Eigen::Matrix3d> svd(H, Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+    //H.SVD(U, S, V);
 
     // Optimal rotation
-    R = V * U.Transpose();
+    Eigen::Matrix3d R = svd.matrixV() * svd.matrixU().transpose();
 
     // Final transformation matrix is T*R*Tc
     // Tc - translates point1 to the centre for finding the rotation
     // R - optimal rotation
     // T - translates point1 back to the centre of point2
 
-    Matrix Tc(4, 4), T(4, 4), RR(4, 4);
+    Eigen::Matrix4d Tc, T, RR;
 
-    Tc.LoadIdentity();
-    T.LoadIdentity();
+    Tc.setIdentity();
+    T.setIdentity();
+    RR.setIdentity();
 
-    Tc.Set(0, 3, -centroid1.x);
-    Tc.Set(1, 3, -centroid1.y);
-    Tc.Set(2, 3, -centroid1.z);
+    Tc(0, 3) = -centroid1.x;
+    Tc(1, 3) = -centroid1.y;
+    Tc(2, 3) = -centroid1.z;
 
-    T.Set(0, 3, centroid2.x);
-    T.Set(1, 3, centroid2.y);
-    T.Set(2, 3, centroid2.z);
+    T(0, 3) = centroid2.x;
+    T(1, 3) = centroid2.y;
+    T(2, 3) = centroid2.z;
 
-    RR.LoadIdentity();
-
-    RR.Set(0, 0, R.Get(0, 0));
-    RR.Set(0, 1, R.Get(0, 1));
-    RR.Set(0, 2, R.Get(0, 2));
-
-    RR.Set(1, 0, R.Get(1, 0));
-    RR.Set(1, 1, R.Get(1, 1));
-    RR.Set(1, 2, R.Get(1, 2));
-
-    RR.Set(2, 0, R.Get(2, 0));
-    RR.Set(2, 1, R.Get(2, 1));
-    RR.Set(2, 2, R.Get(2, 2));
+    RR.block(0,0,3,3) = R;
 
     Transform = T * (RR * Tc);
 
@@ -314,7 +294,7 @@ void ICP::SetPoints(std::vector<Point>& P1, std::vector<Point>& P2,
     // points to meet the user's requested MaxPoint parameter if possible
 
     // Downsample based on a factor of m_max_points
-    unsigned int k = m_max_points * 2;
+    size_t k = m_max_points * 2;
 
     if (P1.size() > k) {
         filtered1.resize(k);

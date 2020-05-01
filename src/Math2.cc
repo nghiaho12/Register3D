@@ -1,6 +1,6 @@
 #include "Math2.h"
-#include "Matrix.h"
-#include <math.h>
+#include <Eigen/Dense>
+#include <Eigen/SVD>
 
 void Math2::ApplyRotation(Point& P, double angle_x, double angle_y,
     double angle_z)
@@ -189,29 +189,27 @@ void Math2::PCA(const std::vector<Point>& points, Point& PC1, Point& PC2, Point&
     mean.z /= (float)points.size();
 
     // Shift data to origin
-    Matrix M(points.size(), 3);
+    Eigen::MatrixXd M(points.size(), 3);
 
     for (unsigned int i = 0; i < points.size(); i++) {
-        M.Set(i, 0, points[i].x - mean.x);
-        M.Set(i, 1, points[i].y - mean.y);
-        M.Set(i, 2, points[i].z - mean.z);
+        M(i, 0) = points[i].x - mean.x;
+        M(i, 1) = points[i].y - mean.y;
+        M(i, 2) = points[i].z - mean.z;
     }
 
-    Matrix U(points.size(), 3), S(3, 3), V(3, 3);
+    Eigen::JacobiSVD<Eigen::Matrix3d> svd(M, Eigen::ComputeThinU | Eigen::ComputeThinV);
 
-    M.SVD(U, S, V);
+    PC1.x = svd.matrixV()(0, 0);
+    PC1.y = svd.matrixV()(1, 0);
+    PC1.z = svd.matrixV()(2, 0);
 
-    PC1.x = V.Get(0, 0);
-    PC1.y = V.Get(1, 0);
-    PC1.z = V.Get(2, 0);
+    PC2.x = svd.matrixV()(0, 1);
+    PC2.y = svd.matrixV()(1, 1);
+    PC2.z = svd.matrixV()(2, 1);
 
-    PC2.x = V.Get(0, 1);
-    PC2.y = V.Get(1, 1);
-    PC2.z = V.Get(2, 1);
-
-    PC3.x = V.Get(0, 2);
-    PC3.y = V.Get(1, 2);
-    PC3.z = V.Get(2, 2);
+    PC3.x = svd.matrixV()(0, 2);
+    PC3.y = svd.matrixV()(1, 2);
+    PC3.z = svd.matrixV()(2, 2);
 }
 
 void Math2::PlaneRegression(const std::vector<Point>& points, double& A, double& B,

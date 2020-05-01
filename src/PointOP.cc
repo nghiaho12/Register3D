@@ -7,16 +7,16 @@
 #define M_PI 3.14159265358979323846 /* pi */
 #endif
 
-void PointOP::ApplyTransform(std::vector<Point>& P, Matrix& T)
+void PointOP::ApplyTransform(std::vector<Point>& P, Eigen::Matrix4d& T)
 {
-    for (unsigned int i = 0; i < P.size(); i++) {
+    for (size_t i = 0; i < P.size(); i++) {
         float x = P[i].x;
         float y = P[i].y;
         float z = P[i].z;
 
-        float new_x = x * T.Get(0, 0) + y * T.Get(0, 1) + z * T.Get(0, 2) + T.Get(0, 3);
-        float new_y = x * T.Get(1, 0) + y * T.Get(1, 1) + z * T.Get(1, 2) + T.Get(1, 3);
-        float new_z = x * T.Get(2, 0) + y * T.Get(2, 1) + z * T.Get(2, 2) + T.Get(2, 3);
+        float new_x = x * T(0, 0) + y * T(0, 1) + z * T(0, 2) + T(0, 3);
+        float new_y = x * T(1, 0) + y * T(1, 1) + z * T(1, 2) + T(1, 3);
+        float new_z = x * T(2, 0) + y * T(2, 1) + z * T(2, 2) + T(2, 3);
 
         P[i].x = new_x;
         P[i].y = new_y;
@@ -24,16 +24,16 @@ void PointOP::ApplyTransform(std::vector<Point>& P, Matrix& T)
     }
 }
 
-void PointOP::ApplyTransform(std::vector<ICPPoint>& P, Matrix& T)
+void PointOP::ApplyTransform(std::vector<ICPPoint>& P, Eigen::Matrix4d& T)
 {
-    for (unsigned int i = 0; i < P.size(); i++) {
+    for (size_t i = 0; i < P.size(); i++) {
         float x = P[i].x;
         float y = P[i].y;
         float z = P[i].z;
 
-        float new_x = x * T.Get(0, 0) + y * T.Get(0, 1) + z * T.Get(0, 2) + T.Get(0, 3);
-        float new_y = x * T.Get(1, 0) + y * T.Get(1, 1) + z * T.Get(1, 2) + T.Get(1, 3);
-        float new_z = x * T.Get(2, 0) + y * T.Get(2, 1) + z * T.Get(2, 2) + T.Get(2, 3);
+        float new_x = x * T(0, 0) + y * T(0, 1) + z * T(0, 2) + T(0, 3);
+        float new_y = x * T(1, 0) + y * T(1, 1) + z * T(1, 2) + T(1, 3);
+        float new_z = x * T(2, 0) + y * T(2, 1) + z * T(2, 2) + T(2, 3);
 
         P[i].x = new_x;
         P[i].y = new_y;
@@ -42,7 +42,7 @@ void PointOP::ApplyTransform(std::vector<ICPPoint>& P, Matrix& T)
 }
 
 void PointOP::GetTransform(std::vector<Point> regpoint1, std::vector<Point> regpoint2,
-    Matrix& transform)
+    Eigen::Matrix4d& transform)
 {
     // Get optimal tranformation of regpoint1 -> regpoint2
 
@@ -64,7 +64,7 @@ void PointOP::GetTransform(std::vector<Point> regpoint1, std::vector<Point> regp
     // Bring all the points to the centroid
     float centroid1[3] = { 0, 0, 0 }, centroid2[3] = { 0, 0, 0 };
 
-    for (unsigned int i = 0; i < regpoint1.size(); i++) {
+    for (size_t i = 0; i < regpoint1.size(); i++) {
         centroid1[0] += regpoint1[i].x;
         centroid1[1] += regpoint1[i].y;
         centroid1[2] += regpoint1[i].z;
@@ -82,7 +82,7 @@ void PointOP::GetTransform(std::vector<Point> regpoint1, std::vector<Point> regp
     centroid2[1] /= regpoint1.size();
     centroid2[2] /= regpoint1.size();
 
-    for (unsigned int i = 0; i < regpoint1.size(); i++) {
+    for (size_t i = 0; i < regpoint1.size(); i++) {
         regpoint1[i].x -= centroid1[0];
         regpoint1[i].y -= centroid1[1];
         regpoint1[i].z -= centroid1[2];
@@ -93,66 +93,50 @@ void PointOP::GetTransform(std::vector<Point> regpoint1, std::vector<Point> regp
     }
 
     // Use SVD to figure out the rotation matrix
-    Matrix MA(3, 1), MB(1, 3), MC(3, 3), R(3, 3), H(3, 3);
-    Matrix U(3, 3), S(3, 3), V(3, 3); // SVD
-
+    Eigen::Matrix3d H;
+    Eigen::Vector3d A, B;
     H.Zero();
 
-    for (unsigned int i = 0; i < regpoint1.size(); i++) {
-        MA.Set(0, 0, regpoint1[i].x);
-        MA.Set(1, 0, regpoint1[i].y);
-        MA.Set(2, 0, regpoint1[i].z);
+    for (size_t i = 0; i < regpoint1.size(); i++) {
+        A(0) = regpoint1[i].x;
+        A(1) = regpoint1[i].y;
+        A(2) = regpoint1[i].z;
 
-        MB.Set(0, 0, regpoint2[i].x);
-        MB.Set(0, 1, regpoint2[i].y);
-        MB.Set(0, 2, regpoint2[i].z);
+        B(0) = regpoint2[i].x;
+        B(1) = regpoint2[i].y;
+        B(2) = regpoint2[i].z;
 
-        MC = MA * MB;
-
-        H += MC;
+        H += A * B.transpose();
     }
 
-    H.SVD(U, S, V);
+    Eigen::JacobiSVD<Eigen::Matrix3d> svd(H, Eigen::ComputeThinU | Eigen::ComputeThinV);
 
     // Optimal rotation
-    R = V * U.Transpose();
+    Eigen::Matrix3d R = svd.matrixV() * svd.matrixU().transpose();
 
-    transform.LoadIdentity();
+    transform.setIdentity();
 
-    Matrix translate(4, 4), to_origin(4, 4), rotation(4, 4);
+    Eigen::Matrix4d translate, to_origin, rotation;
 
-    translate.LoadIdentity();
-    to_origin.LoadIdentity();
-    rotation.LoadIdentity();
+    translate.setIdentity();
+    to_origin.setIdentity();
+    rotation.setIdentity();
 
-    // rotation
-    rotation.Set(0, 0, R.Get(0, 0));
-    rotation.Set(0, 1, R.Get(0, 1));
-    rotation.Set(0, 2, R.Get(0, 2));
-    rotation.Set(1, 0, R.Get(1, 0));
-    rotation.Set(1, 1, R.Get(1, 1));
-    rotation.Set(1, 2, R.Get(1, 2));
-    rotation.Set(2, 0, R.Get(2, 0));
-    rotation.Set(2, 1, R.Get(2, 1));
-    rotation.Set(2, 2, R.Get(2, 2));
+    rotation.block(0, 0, 3, 3) = R;
 
-    to_origin.Set(0, 3, -centroid1[0]);
-    to_origin.Set(1, 3, -centroid1[1]);
-    to_origin.Set(2, 3, -centroid1[2]);
+    to_origin(0, 3) = -centroid1[0];
+    to_origin(1, 3) = -centroid1[1];
+    to_origin(2, 3) = -centroid1[2];
 
-    translate.Set(0, 3, centroid2[0]);
-    translate.Set(1, 3, centroid2[1]);
-    translate.Set(2, 3, centroid2[2]);
-
-    printf("transform\n");
+    translate(0, 3) = centroid2[0];
+    translate(1, 3) = centroid2[1];
+    translate(2, 3) = centroid2[2];
 
     transform = translate * (rotation * to_origin);
-
-    transform.Print();
 }
 
 void PointOP::GetTransform2(std::vector<Point>& regpoint1, std::vector<Point>& regpoint2,
-    Matrix& transform)
+    Eigen::Matrix4d& transform)
 {
     // Get optimal tranformation of regpoint1 -> regpoint2
 

@@ -1,9 +1,9 @@
 #pragma once
 
+#include "ICP.h"
 #include "About.h"
 #include "GLCanvas.h"
 #include "Help.h"
-#include "ICP.h"
 #include "ICPDialog.h"
 #include "Matrix.h"
 #include "PointOP.h"
@@ -58,7 +58,7 @@ private:
     bool m_init;
     int m_init_sash;
 
-    Matrix m_transform; // Final transformation
+    Eigen::Matrix4d m_transform; // Final transformation
 
     DECLARE_EVENT_TABLE()
 };
