@@ -12,11 +12,11 @@ struct RGB {
     unsigned char r, g, b;
 };
 
-struct _Global {
+struct Params {
     std::vector<Point> scan1, scan2;
 
     int ID_1, ID_2;
-    std::vector<unsigned int> table1, table2; // Allows a reverseable version of random_shuffle()
+    std::vector<size_t> table1, table2; // Allows a reverseable version of random_shuffle()
     wxString pwd;
 
     // False colour palette

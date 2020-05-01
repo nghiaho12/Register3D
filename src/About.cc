@@ -2,8 +2,6 @@
 #include "Global.h"
 #include <iostream>
 
-extern _Global Global;
-
 BEGIN_EVENT_TABLE(About, wxDialog)
 EVT_BUTTON(wxID_CLOSE, About::Close)
 END_EVENT_TABLE()
@@ -35,7 +33,7 @@ About::About(wxWindow* parent)
     Centre();
 
     m_panel = new wxPanel(this, wxID_ANY);
-    m_img = new Image(m_panel, Global.pwd + wxT("/about.png"));
+    m_img = new Image(m_panel, "");//Global.pwd + wxT("/about.png"));
 
     int w, h;
     m_img->GetSize(&w, &h);

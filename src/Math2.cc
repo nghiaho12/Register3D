@@ -197,7 +197,7 @@ void Math2::PCA(const std::vector<Point>& points, Point& PC1, Point& PC2, Point&
         M(i, 2) = points[i].z - mean.z;
     }
 
-    Eigen::JacobiSVD<Eigen::Matrix3d> svd(M, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Eigen::JacobiSVD<Eigen::Matrix3d> svd(M, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
     PC1.x = svd.matrixV()(0, 0);
     PC1.y = svd.matrixV()(1, 0);

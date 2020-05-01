@@ -5,15 +5,13 @@
 #include <sstream>
 #include <Eigen/SVD>
 
-#include "Global.h"
 #include "ICPPoint.h"
 #include "Misc.h"
 #include "Point.h"
 #include "PointOP.h"
 
-extern _Global Global;
-
-ICP::ICP()
+ICP::ICP(Params &params) :
+    m_params(params)
 {
     m_LTS = 1.0;
     m_text = NULL;
@@ -30,26 +28,28 @@ bool ICP::ByDistSq(const ICPPoint& a, const ICPPoint& b)
 void ICP::Run(Eigen::Matrix4d& Transform)
 {
     // Some distance statistics
-    std::vector<double> DistSq;
+    std::vector<double> dist_sq;
 
-    if (m_text) {
-        m_text->AppendText("Determining square distance to trim at ... ");
-
+    auto update_text = [&]() {
         while (m_app->Pending()) {
             m_app->Dispatch();
         }
+    };
+
+    if (m_text) {
+        m_text->AppendText("Determining square distance to trim at ... ");
+        update_text();
     }
 
     for (size_t i = 0; i < m_points1.size(); i++) {
         if (i % 100000 == 0) {
             if (m_text) {
                 std::stringstream ss;
-                ss << i * 100 / (float)m_points1.size() << " ";
+
+                ss << i * 100 / (float)m_points1.size() << "% ";
                 m_text->AppendText(ss.str());
 
-                while (m_app->Pending()) {
-                    m_app->Dispatch();
-                }
+                update_text();
             }
         }
 
@@ -61,47 +61,36 @@ void ICP::Run(Eigen::Matrix4d& Transform)
         m_points1[i].nearest = m_points2[index];
         m_points1[i].dist_sq = dist;
 
-        DistSq.push_back(dist);
+        dist_sq.push_back(dist);
     }
 
     if (m_text) {
         m_text->AppendText("100%\n");
-
-        while (m_app->Pending()) {
-            m_app->Dispatch();
-        }
+        update_text();
     }
 
-    std::sort(DistSq.begin(), DistSq.end());
+    std::sort(dist_sq.begin(), dist_sq.end());
 
-    size_t pos = (int)(DistSq.size() * m_LTS);
+    size_t pos = (int)(dist_sq.size() * m_LTS);
 
-    if (pos >= DistSq.size()) {
-        pos = DistSq.size() - 1;
+    if (pos >= dist_sq.size()) {
+        pos = dist_sq.size() - 1;
     }
 
-    double trimDist = DistSq[pos];
+    double trimDist = dist_sq[pos];
 
     if (m_text) {
         std::stringstream ss;
         ss << "Trimming at distance: " << trimDist << "\n";
         m_text->AppendText(ss.str());
-
-        while (m_app->Pending()) {
-            m_app->Dispatch();
-        }
+        update_text();
     }
-
-    // End stat
 
     std::vector<ICPPoint> Points2p;
 
     if (m_text) {
         m_text->AppendText("Trimming points ... ");
-
-        while (m_app->Pending()) {
-            m_app->Dispatch();
-        }
+        update_text();
     }
 
     // Find which points to use based on trimDist and also finds the centroid of
@@ -124,12 +113,9 @@ void ICP::Run(Eigen::Matrix4d& Transform)
             if (m_text) {
                 std::stringstream ss;
 
-                ss << i * 100 / (float)m_points1.size() << " ";
+                ss << i * 100 / (float)m_points1.size() << "% ";
                 m_text->AppendText(ss.str());
-
-                while (m_app->Pending()) {
-                    m_app->Dispatch();
-                }
+                update_text();
             }
         }
 
@@ -137,7 +123,6 @@ void ICP::Run(Eigen::Matrix4d& Transform)
             continue;
         }
 
-        // Points2p.push_back(m_points1[i].nearest);
         sum_dist += m_points1[i].dist_sq;
 
         centroid1.x += m_points1[i].x;
@@ -153,15 +138,11 @@ void ICP::Run(Eigen::Matrix4d& Transform)
 
     if (m_text) {
         m_text->AppendText("100%\n");
-
-        while (m_app->Pending()) {
-            m_app->Dispatch();
-        }
+        update_text();
     }
 
     m_MSE = sum_dist / count;
 
-    // printf("m_MSE: %.10f\n", m_MSE);
     centroid1.x /= count;
     centroid1.y /= count;
     centroid1.z /= count;
@@ -174,29 +155,24 @@ void ICP::Run(Eigen::Matrix4d& Transform)
    * FIND OPTIMAL ROTATION USING SVD
    ************************************/
 
-    //Matrix H(3, 3), A(3, 1), B(1, 3), C(3, 3), R(3, 3);
-    //Matrix U(3, 3), S(3, 3), V(3, 3); // SVD
-
     Eigen::Matrix3d H;
 
     H.setZero();
 
     if (m_text) {
-        m_text->AppendText(wxT("Calculating optimal rotation ... "));
-
-        while (m_app->Pending()) {
-            m_app->Dispatch();
-        }
+        m_text->AppendText("Calculating optimal rotation ... ");
+        update_text();
     }
 
     for (size_t i = 0; i < m_points1.size(); i++) {
         if (i % 100000 == 0) {
             if (m_text) {
-                m_text->AppendText(wxString::Format(wxT("%.0f%% "),
-                    i * 100 / (float)m_points1.size()));
+                std::stringstream ss;
 
-                while (m_app->Pending())
-                    m_app->Dispatch();
+                ss << i * 100 / (float)m_points1.size() << "% ";
+                m_text->AppendText(ss.str());
+
+                update_text();
             }
         }
 
@@ -219,15 +195,10 @@ void ICP::Run(Eigen::Matrix4d& Transform)
 
     if (m_text) {
         m_text->AppendText("100%\n");
-
-        while (m_app->Pending()) {
-            m_app->Dispatch();
-        }
+        update_text();
     }
 
-    Eigen::JacobiSVD<Eigen::Matrix3d> svd(H, Eigen::ComputeThinU | Eigen::ComputeThinV);
-
-    //H.SVD(U, S, V);
+    Eigen::JacobiSVD<Eigen::Matrix3d> svd(H, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
     // Optimal rotation
     Eigen::Matrix3d R = svd.matrixV() * svd.matrixU().transpose();
@@ -257,8 +228,6 @@ void ICP::Run(Eigen::Matrix4d& Transform)
 
     PointOP::ApplyTransform(m_points1, Transform);
 
-    // Transform.Print();
-
     // Clean up memory
     {
         std::vector<ICPPoint> Empty;
@@ -281,8 +250,14 @@ void ICP::SetPoints(std::vector<Point>& P1, std::vector<Point>& P2,
     std::vector<Point> filtered1, filtered2;
     Point start, end;
 
-    reverseable_shuffle_forward(P1, Global.table1);
-    reverseable_shuffle_forward(P2, Global.table2);
+    reverseable_shuffle_forward(P1, m_params.table1);
+    reverseable_shuffle_forward(P2, m_params.table2);
+
+    auto update_text = [&]() {
+        while (m_app->Pending()) {
+            m_app->Dispatch();
+        }
+    };
 
     // EXPERIMENTAL:
     // The aim of this is to save as much memory as possible.
@@ -334,9 +309,7 @@ void ICP::SetPoints(std::vector<Point>& P1, std::vector<Point>& P2,
                 ss << i * 100 / (float)filtered1.size() << "% ";
                 m_text->AppendText(ss.str());
 
-                while (m_app->Pending()) {
-                    m_app->Dispatch();
-                }
+                update_text();
             }
         }
 
@@ -356,9 +329,7 @@ void ICP::SetPoints(std::vector<Point>& P1, std::vector<Point>& P2,
         ss << "Number of points after downsampling/filtering: " << m_points1.size() << "\n";
         m_text->AppendText(ss.str());
 
-        while (m_app->Pending()) {
-            m_app->Dispatch();
-        }
+        update_text();
     }
 
     Point2DB.Free();
@@ -381,12 +352,10 @@ void ICP::SetPoints(std::vector<Point>& P1, std::vector<Point>& P2,
         if (i % 100000 == 0) {
             if (m_text) {
                 std::stringstream ss;
-                ss << i * 100 / (float)filtered2.size() << " ";
+                ss << i * 100 / (float)filtered2.size() << "% ";
                 m_text->AppendText(ss.str());
 
-                while (m_app->Pending()) {
-                    m_app->Dispatch();
-                }
+                update_text();
             }
         }
 
@@ -407,17 +376,15 @@ void ICP::SetPoints(std::vector<Point>& P1, std::vector<Point>& P2,
         ss << "Number of points after downsampling/filtering: " << m_points2.size() << "\n";
         m_text->AppendText(ss.str());
 
-        while (m_app->Pending()) {
-            m_app->Dispatch();
-        }
+        update_text();
     }
 
     Point1DB.Free();
 
     m_ANN_points2.SetPoints(m_points2);
 
-    reverseable_shuffle_backward(P1, Global.table1);
-    reverseable_shuffle_backward(P2, Global.table2);
+    reverseable_shuffle_backward(P1, m_params.table1);
+    reverseable_shuffle_backward(P2, m_params.table2);
 }
 
 void ICP::Seteps(float e)

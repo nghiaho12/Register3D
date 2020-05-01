@@ -7,12 +7,14 @@ The main TrICP algorithm class. Designed to iteract with the GUI.
 #include <Eigen/Dense>
 #include <wx/wx.h>
 
+#include "Global.h"
 #include "ICPPoint.h"
 #include "MyANN.h"
 #include "Point.h"
+
 class ICP {
 public:
-    ICP();
+    ICP(Params &params);
 
     void SetLTS(float a);
     void SetPoints(std::vector<Point>& P1, std::vector<Point>& P2, float dist_threshold);
@@ -30,6 +32,8 @@ private:
     bool ByDistSq(const ICPPoint& a, const ICPPoint& b);
 
 private:
+    Params m_params;
+
     std::vector<ICPPoint> m_points1;
     std::vector<Point> m_points2;
     ANN m_ANN_points2;

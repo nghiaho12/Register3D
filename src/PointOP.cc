@@ -109,7 +109,7 @@ void PointOP::GetTransform(std::vector<Point> regpoint1, std::vector<Point> regp
         H += A * B.transpose();
     }
 
-    Eigen::JacobiSVD<Eigen::Matrix3d> svd(H, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Eigen::JacobiSVD<Eigen::Matrix3d> svd(H, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
     // Optimal rotation
     Eigen::Matrix3d R = svd.matrixV() * svd.matrixU().transpose();

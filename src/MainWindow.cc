@@ -7,8 +7,6 @@
 
 #include "PointReader.h"
 
-extern _Global Global;
-
 enum {
     OPEN_1 = wxID_HIGHEST + 1,
     OPEN_2,
@@ -118,7 +116,7 @@ MainWindow::MainWindow()
     toolBar->AddControl(m_viewmerge_btn);
 
     m_ground_btn = new wxButton(toolBar, GROUND, wxT("Set ground plane (2nd scan) "));
-    toolBar->AddControl(m_ground_btn);
+    //toolBar->AddControl(m_ground_btn);
 
     toolBar->Realize();
     SetToolBar(toolBar);
@@ -146,8 +144,8 @@ MainWindow::MainWindow()
     // wxPanel *m_GL_panel1 = new wxPanel(m_splitter_window_h);
     // wxPanel *m_GL_panel2 = new wxPanel(m_splitter_window_h);
 
-    m_canvas1 = new GLCanvas(m_GL_panel1, CANVAS1);
-    m_canvas2 = new GLCanvas(m_GL_panel2, CANVAS2);
+    m_canvas1 = new GLCanvas(m_GL_panel1, CANVAS1, STITCH_MODE, m_params);
+    m_canvas2 = new GLCanvas(m_GL_panel2, CANVAS2, STITCH_MODE, m_params);
 
     m_canvas1->Disable();
     m_canvas2->Disable();
@@ -161,11 +159,11 @@ MainWindow::MainWindow()
     m_hbox1 = new wxBoxSizer(wxHORIZONTAL);
     m_hbox2 = new wxBoxSizer(wxHORIZONTAL);
 
-    m_scan1 = new wxStaticText(m_GL_panel1, wxID_ANY, wxT(" First scan"));
-    m_scan2 = new wxStaticText(m_GL_panel2, wxID_ANY, wxT(" Second scan"));
+    m_file1 = new wxStaticText(m_GL_panel1, wxID_ANY, wxT(" First scan"));
+    m_file2 = new wxStaticText(m_GL_panel2, wxID_ANY, wxT(" Second scan"));
 
-    m_hbox1->Add(m_scan1, 1, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL);
-    m_hbox2->Add(m_scan2, 1, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL);
+    m_hbox1->Add(m_file1, 1, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL);
+    m_hbox2->Add(m_file2, 1, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL);
 
     vbox1->Add(m_hbox1, 0, wxEXPAND);
     vbox1->Add(m_canvas1, 1, wxEXPAND);
@@ -188,7 +186,7 @@ MainWindow::MainWindow()
     m_canvas2->SetwxTextCtrl(m_status);
 
     // Setup the OpenGL canvas for merged scans
-    m_merged_scans = new GLCanvas(this, wxID_ANY, MERGED_MODE);
+    m_merged_scans = new GLCanvas(this, wxID_ANY, MERGED_MODE, m_params);
     m_merged_scans->Hide();
     m_merged_scans->Disable();
     m_vbox->Add(m_merged_scans, 1, wxEXPAND);
@@ -200,8 +198,8 @@ MainWindow::MainWindow()
     m_timer = new wxTimer(this, TIMER_ID);
     m_timer->Start(100);
 
-    Global.ID_1 = -1;
-    Global.ID_2 = -1;
+    m_params.ID_1 = -1;
+    m_params.ID_2 = -1;
 
     m_save1->Enable(false);
     save2->Enable(false);
@@ -209,8 +207,8 @@ MainWindow::MainWindow()
     m_save_matrix->Enable(false);
 
     // icon
-    wxIcon icon(Global.pwd + wxT("/icon.ico"), wxBITMAP_TYPE_ICO);
-    SetIcon(icon);
+    //wxIcon icon(m_params.pwd + wxT("/icon.ico"), wxBITMAP_TYPE_ICO);
+    //SetIcon(icon);
 
     InitFalseColour();
 
@@ -219,42 +217,42 @@ MainWindow::MainWindow()
 
 void MainWindow::InitFalseColour()
 {
-    Global.false_colour_r = new unsigned char[5 * 256];
-    Global.false_colour_g = new unsigned char[5 * 256];
-    Global.false_colour_b = new unsigned char[5 * 256];
+    m_params.false_colour_r = new unsigned char[5 * 256];
+    m_params.false_colour_g = new unsigned char[5 * 256];
+    m_params.false_colour_b = new unsigned char[5 * 256];
 
     for (int i = 0; i < 255; i++) {
-        Global.false_colour_r[i] = 255;
-        Global.false_colour_g[i] = i;
-        Global.false_colour_b[i] = 0;
+        m_params.false_colour_r[i] = 255;
+        m_params.false_colour_g[i] = i;
+        m_params.false_colour_b[i] = 0;
     }
 
     for (int i = 255, c = 0; i < 255 * 2; i++, c++) {
-        Global.false_colour_r[i] = 255 - c;
-        Global.false_colour_g[i] = 255;
-        Global.false_colour_b[i] = 0;
+        m_params.false_colour_r[i] = 255 - c;
+        m_params.false_colour_g[i] = 255;
+        m_params.false_colour_b[i] = 0;
     }
 
     for (int i = 255 * 2, c = 0; i < 255 * 3; i++, c++) {
-        Global.false_colour_r[i] = 0;
-        Global.false_colour_g[i] = 255;
-        Global.false_colour_b[i] = c;
+        m_params.false_colour_r[i] = 0;
+        m_params.false_colour_g[i] = 255;
+        m_params.false_colour_b[i] = c;
     }
 
     for (int i = 255 * 3, c = 0; i < 255 * 4; i++, c++) {
-        Global.false_colour_r[i] = 0;
-        Global.false_colour_g[i] = 255 - c;
-        Global.false_colour_b[i] = 255;
+        m_params.false_colour_r[i] = 0;
+        m_params.false_colour_g[i] = 255 - c;
+        m_params.false_colour_b[i] = 255;
     }
 
     for (int i = 255 * 4, c = 0; i < 255 * 5; i++, c++) {
-        Global.false_colour_r[i] = c;
-        Global.false_colour_g[i] = 0;
-        Global.false_colour_b[i] = 255;
+        m_params.false_colour_r[i] = c;
+        m_params.false_colour_g[i] = 0;
+        m_params.false_colour_b[i] = 255;
     }
 
-    Global.false_colour_min_z = -1.0;
-    Global.false_colour_max_z = 10.0;
+    m_params.false_colour_min_z = -1.0;
+    m_params.false_colour_max_z = 10.0;
 }
 
 void MainWindow::OnQuit(wxCommandEvent& event)
@@ -290,14 +288,14 @@ void MainWindow::OnResize(wxSizeEvent& event)
     }
 }
 
-bool MainWindow::OpenScan(bool first)
+bool MainWindow::OpenFile(bool first)
 {
     wxString caption;
 
     if (first) {
-        caption = wxT("Please choose the first scan");
+        caption = wxT("Please choose the first point cloud");
     } else {
-        caption = wxT("Please choose the second scan");
+        caption = wxT("Please choose the second point cloud");
     }
 
     wxString wildcard = wxT("PLY|*.ply");
@@ -314,21 +312,21 @@ bool MainWindow::OpenScan(bool first)
 
         if (ext == wxT("ply")) {
             if (first) {
-                LoadPLYPoints(dialog.GetPath().ToStdString(), Global.scan1);
+                LoadPLYPoints(dialog.GetPath().ToStdString(), m_params.scan1);
             } else {
-                LoadPLYPoints(dialog.GetPath().ToStdString(), Global.scan2);
+                LoadPLYPoints(dialog.GetPath().ToStdString(), m_params.scan2);
             }
         }
 
         if (first) {
-            m_scan1->SetLabel(dialog.GetPath());
+            m_file1->SetLabel(dialog.GetPath());
 
-            m_canvas1->LoadPoints(Global.scan1);
+            m_canvas1->LoadPoints(m_params.scan1);
             m_canvas1->Enable();
         } else {
-            m_scan2->SetLabel(dialog.GetPath());
+            m_file2->SetLabel(dialog.GetPath());
 
-            m_canvas2->LoadPoints(Global.scan2);
+            m_canvas2->LoadPoints(m_params.scan2);
             m_canvas2->Enable();
         }
 
@@ -344,20 +342,20 @@ bool MainWindow::OpenScan(bool first)
 
 void MainWindow::OpenFirstScan(wxCommandEvent& event)
 {
-    if (OpenScan(true)) {
-        Global.table1.resize(Global.scan1.size());
+    if (OpenFile(true)) {
+        m_params.table1.resize(m_params.scan1.size());
 
-        for (unsigned int i = 0; i < Global.scan1.size(); i++)
-            Global.table1[i] = i;
+        for (unsigned int i = 0; i < m_params.scan1.size(); i++)
+            m_params.table1[i] = i;
 
-        random_shuffle(Global.table1.begin(), Global.table1.end(), MyRandRange);
+        random_shuffle(m_params.table1.begin(), m_params.table1.end(), MyRandRange);
 
         m_save1->Enable(true);
 
-        if (Global.ID_1 >= 0 && Global.ID_2 >= 0) // Both scans loaded
-            m_merged_scans->LoadPointsForFastview(Global.scan1, Global.scan2);
+        if (m_params.ID_1 >= 0 && m_params.ID_2 >= 0) // Both scans loaded
+            m_merged_scans->LoadPointsForFastview(m_params.scan1, m_params.scan2);
 
-        FalseColourScan(Global.scan1, Global.false_colour1);
+        FalseColourScan(m_params.scan1, m_params.false_colour1);
 
         m_canvas1->Draw();
     }
@@ -365,21 +363,21 @@ void MainWindow::OpenFirstScan(wxCommandEvent& event)
 
 void MainWindow::OpenSecondScan(wxCommandEvent& event)
 {
-    if (OpenScan(false)) {
-        Global.table2.resize(Global.scan2.size());
+    if (OpenFile(false)) {
+        m_params.table2.resize(m_params.scan2.size());
 
-        for (unsigned int i = 0; i < Global.scan2.size(); i++)
-            Global.table2[i] = i;
+        for (unsigned int i = 0; i < m_params.scan2.size(); i++)
+            m_params.table2[i] = i;
 
-        random_shuffle(Global.table2.begin(), Global.table2.end(), MyRandRange);
+        random_shuffle(m_params.table2.begin(), m_params.table2.end(), MyRandRange);
 
         save2->Enable(true);
 
-        if (Global.ID_1 >= 0 && Global.ID_2 >= 0) // Both scans loaded
-            m_merged_scans->LoadPointsForFastview(Global.scan1, Global.scan2);
+        if (m_params.ID_1 >= 0 && m_params.ID_2 >= 0) // Both scans loaded
+            m_merged_scans->LoadPointsForFastview(m_params.scan1, m_params.scan2);
 
         // Init the false colour
-        FalseColourScan(Global.scan2, Global.false_colour2);
+        FalseColourScan(m_params.scan2, m_params.false_colour2);
 
         m_canvas2->Draw();
     }
@@ -387,7 +385,7 @@ void MainWindow::OpenSecondScan(wxCommandEvent& event)
 
 void MainWindow::OnTimer(wxTimerEvent& event)
 {
-    if (Global.scan1.size() > 0 && Global.scan2.size() > 0)
+    if (m_params.scan1.size() > 0 && m_params.scan2.size() > 0)
         m_viewmerge_btn->Enable();
     else
         m_viewmerge_btn->Disable();
@@ -433,7 +431,7 @@ void MainWindow::OnTimer(wxTimerEvent& event)
 
 void MainWindow::StitchScans(wxCommandEvent& event)
 {
-    ICP icp;
+    ICP icp(m_params);
     Eigen::Matrix4d InitialTransform, ICPTransform, TmpMatrix;
     ICPDialog* dialog = new ICPDialog(NULL);
 
@@ -466,7 +464,7 @@ void MainWindow::StitchScans(wxCommandEvent& event)
         m_status->AppendText(wxT("\n"));
     }
 
-    PointOP::ApplyTransform(Global.scan1, InitialTransform);
+    PointOP::ApplyTransform(m_params.scan1, InitialTransform);
 
     // Resize the m_status box, so the user can read it better
     int w, h;
@@ -485,7 +483,7 @@ void MainWindow::StitchScans(wxCommandEvent& event)
         icp.SetwxApp(m_app);
         icp.SetLTS(dialog->GetLTS());
         icp.SetMaxPoints(dialog->GetMaxPoints());
-        icp.SetPoints(Global.scan1, Global.scan2,
+        icp.SetPoints(m_params.scan1, m_params.scan2,
             dialog->GetInitialOutlierDist());
         icp.Seteps(dialog->Geteps());
 
@@ -533,9 +531,9 @@ void MainWindow::StitchScans(wxCommandEvent& event)
         }
     }
 
-    PointOP::ApplyTransform(Global.scan1, ICPTransform);
+    PointOP::ApplyTransform(m_params.scan1, ICPTransform);
 
-    m_canvas1->LoadPoints(Global.scan1);
+    m_canvas1->LoadPoints(m_params.scan1);
 
     m_transform = ICPTransform * InitialTransform;
 
@@ -557,7 +555,7 @@ void MainWindow::StitchScans(wxCommandEvent& event)
     m_canvas1->Enable();
     m_canvas2->Enable();
 
-    m_merged_scans->LoadPointsForFastview(Global.scan1, Global.scan2);
+    m_merged_scans->LoadPointsForFastview(m_params.scan1, m_params.scan2);
 
     wxMessageDialog* d = new wxMessageDialog(this, wxT("Stitching complete!"), wxT("Complete"),
         wxOK | wxICON_EXCLAMATION);
@@ -657,25 +655,25 @@ void MainWindow::SaveAs(std::vector<Point>& p, bool first, bool m_save_matrix)
         gzclose(out);
 
         if (first)
-            m_scan1->SetLabel(filename);
+            m_file1->SetLabel(filename);
         else
-            m_scan2->SetLabel(filename);
+            m_file2->SetLabel(filename);
     }
 }
 
 void MainWindow::SaveAsFirstAndMatrix(wxCommandEvent& event)
 {
-    SaveAs(Global.scan1, true, true);
+    SaveAs(m_params.scan1, true, true);
 }
 
 void MainWindow::SaveAsFirst(wxCommandEvent& event)
 {
-    SaveAs(Global.scan1, true, false);
+    SaveAs(m_params.scan1, true, false);
 }
 
 void MainWindow::SaveAsSecond(wxCommandEvent& event)
 {
-    SaveAs(Global.scan2, false, false);
+    SaveAs(m_params.scan2, false, false);
 }
 
 void MainWindow::SetApp(wxApp* a) { m_app = a; }
@@ -759,14 +757,14 @@ void MainWindow::SaveMatrix2(const wxString& dialog_path)
     wxFileName::SplitPath(dialog_path, &path, &filename, &ext);
     filename += wxT(".") + ext;
 
-    wxFileName::SplitPath(m_scan1->GetLabel(), &path, &filename1, &ext);
+    wxFileName::SplitPath(m_file1->GetLabel(), &path, &filename1, &ext);
     filename1 += wxT(".") + ext;
 
-    wxFileName::SplitPath(m_scan2->GetLabel(), &path, &filename2, &ext);
+    wxFileName::SplitPath(m_file2->GetLabel(), &path, &filename2, &ext);
     filename2 += wxT(".") + ext;
 
     fprintf(OutMatrix, "# Register3D transformation matrix\n");
-    fprintf(OutMatrix, "%d\n", Global.ID_1); // ID
+    fprintf(OutMatrix, "%d\n", m_params.ID_1); // ID
     fprintf(OutMatrix, "%s\n", (const char*)filename.ToAscii()); // new name
     fprintf(OutMatrix, "%s\n", (const char*)filename1.ToAscii()); // old name
     fprintf(OutMatrix, "%s\n",
@@ -791,20 +789,20 @@ void MainWindow::FalseColourScan(std::vector<Point>& points,
     for (unsigned int i = 0; i < points.size(); i++) {
         int r, g, b;
 
-        if (points[i].z < Global.false_colour_min_z) {
-            r = Global.false_colour_r[0];
-            g = Global.false_colour_g[0];
-            b = Global.false_colour_b[0];
-        } else if (points[i].z > Global.false_colour_max_z) {
-            r = Global.false_colour_r[256 * 5 - 1];
-            g = Global.false_colour_g[256 * 5 - 1];
-            b = Global.false_colour_b[256 * 5 - 1];
+        if (points[i].z < m_params.false_colour_min_z) {
+            r = m_params.false_colour_r[0];
+            g = m_params.false_colour_g[0];
+            b = m_params.false_colour_b[0];
+        } else if (points[i].z > m_params.false_colour_max_z) {
+            r = m_params.false_colour_r[256 * 5 - 1];
+            g = m_params.false_colour_g[256 * 5 - 1];
+            b = m_params.false_colour_b[256 * 5 - 1];
         } else {
-            int idx = (points[i].z - Global.false_colour_min_z) / (Global.false_colour_max_z - Global.false_colour_min_z) * 256 * 5;
+            int idx = (points[i].z - m_params.false_colour_min_z) / (m_params.false_colour_max_z - m_params.false_colour_min_z) * 256 * 5;
 
-            r = Global.false_colour_r[idx];
-            g = Global.false_colour_g[idx];
-            b = Global.false_colour_b[idx];
+            r = m_params.false_colour_r[idx];
+            g = m_params.false_colour_g[idx];
+            b = m_params.false_colour_b[idx];
         }
 
         false_colour[i].r = r;
@@ -835,21 +833,21 @@ void MainWindow::SetGroundPlane(wxCommandEvent& event)
 
     Math2::CrossProduct(PlaneNormal, ZAxis, rotation_vec);
     Math2::Normalize(rotation_vec);
-    Math2::RotatePoints(Global.scan2, angle, rotation_vec.x, rotation_vec.y,
+    Math2::RotatePoints(m_params.scan2, angle, rotation_vec.x, rotation_vec.y,
         rotation_vec.z);
     Math2::RotatePoints(cp, angle, rotation_vec.x, rotation_vec.y,
         rotation_vec.z);
 
-    for (unsigned int i = 0; i < Global.scan2.size(); i++)
-        Global.scan2[i].z -= cp[0].z;
+    for (unsigned int i = 0; i < m_params.scan2.size(); i++)
+        m_params.scan2[i].z -= cp[0].z;
 
     // Reload points
-    FalseColourScan(Global.scan2, Global.false_colour2);
+    FalseColourScan(m_params.scan2, m_params.false_colour2);
 
-    m_canvas2->LoadPoints(Global.scan2);
+    m_canvas2->LoadPoints(m_params.scan2);
 
-    if (Global.ID_1 >= 0 && Global.ID_2 >= 0) // Both scans loaded
-        m_merged_scans->LoadPointsForFastview(Global.scan1, Global.scan2);
+    if (m_params.ID_1 >= 0 && m_params.ID_2 >= 0) // Both scans loaded
+        m_merged_scans->LoadPointsForFastview(m_params.scan1, m_params.scan2);
 
     m_status->AppendText(wxT("Ground plane set for scan 2"));
 

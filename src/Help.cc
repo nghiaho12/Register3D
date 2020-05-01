@@ -1,6 +1,5 @@
 #include "Help.h"
 #include "Global.h"
-extern _Global Global;
 
 BEGIN_EVENT_TABLE(HelpDialog, wxDialog)
 EVT_BUTTON(wxID_CLOSE, HelpDialog::Close)
@@ -13,7 +12,7 @@ HelpDialog::HelpDialog(wxWindow* parent)
 {
     m_vbox = new wxBoxSizer(wxVERTICAL);
     m_html = new wxHtmlWindow(this, -1, wxDefaultPosition, wxSize(850, 600));
-    m_html->LoadPage(Global.pwd + wxT("/help/index.htm"));
+    //m_html->LoadPage(Global.pwd + wxT("/help/index.htm"));
 
     m_close = new wxButton(this, wxID_CLOSE);
     m_home = new wxButton(this, wxID_HOME);
@@ -34,5 +33,5 @@ void HelpDialog::Close(wxCommandEvent& event) { EndModal(wxID_OK); }
 
 void HelpDialog::Home(wxCommandEvent& event)
 {
-    m_html->LoadPage(Global.pwd + wxT("/help/index.htm"));
+    //m_html->LoadPage(Global.pwd + wxT("/help/index.htm"));
 }

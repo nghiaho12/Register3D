@@ -16,7 +16,7 @@ enum ModeType { STITCH_MODE,
 
 class GLCanvas : public wxGLCanvas {
 public:
-    GLCanvas(wxWindow* parent, wxWindowID id = -1, ModeType mode = STITCH_MODE);
+    GLCanvas(wxWindow* parent, wxWindowID id, ModeType mode, Params &params);
     bool Draw();
 
     void OnPaint(wxPaintEvent& event);
@@ -56,6 +56,7 @@ private:
 
 private:
     wxGLContext m_context;
+    Params &m_params;
 
     bool m_is_first_scan; // first or second
 

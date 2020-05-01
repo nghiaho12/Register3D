@@ -5,7 +5,6 @@
 #include "GLCanvas.h"
 #include "Help.h"
 #include "ICPDialog.h"
-#include "Matrix.h"
 #include "PointOP.h"
 #include <wx/splitter.h>
 #include <wx/wx.h>
@@ -25,7 +24,7 @@ private:
     void OnResize(wxSizeEvent& event);
     void OnTimer(wxTimerEvent& event);
 
-    bool OpenScan(bool first);
+    bool OpenFile(bool first);
     void OpenFirstScan(wxCommandEvent& event);
     void OpenSecondScan(wxCommandEvent& event);
     void StitchScans(wxCommandEvent& event);
@@ -42,6 +41,8 @@ private:
     void EnableAllExceptStatus(bool enable = true);
 
 private:
+    Params m_params;
+
     wxMenuBar* m_menubar;
     wxMenu *m_file, *m_help;
     wxMenuItem *m_save1, *m_save1_matrix, *save2, *m_save_matrix;
@@ -49,15 +50,15 @@ private:
     wxPanel *m_GL_panel1, *m_GL_panel2;
     wxBoxSizer *m_hbox1, *m_hbox2;
     wxSplitterWindow *m_splitter_window_h, *m_splitter_window_v;
-    wxStaticText *m_scan1, *m_scan2;
+    wxStaticText *m_file1, *m_file2;
     wxTextCtrl* m_status;
     wxButton *m_register_btn, *m_viewmerge_btn, *m_ground_btn;
     wxTimer* m_timer;
     GLCanvas *m_canvas1, *m_canvas2, *m_merged_scans;
     wxApp* m_app;
+
     bool m_init;
     int m_init_sash;
-
     Eigen::Matrix4d m_transform; // Final transformation
 
     DECLARE_EVENT_TABLE()
