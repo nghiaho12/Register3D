@@ -104,7 +104,7 @@ void Cylinder::SetRadius(float radius)
     }
 }
 
-vector<Point>& Cylinder::GetControlPoints() { return ControlPoints; }
+std::vector<Point>& Cylinder::GetControlPoints() { return ControlPoints; }
 
 Point& Cylinder::GetStart() { return m_start; }
 

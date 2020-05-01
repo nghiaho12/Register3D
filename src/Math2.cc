@@ -43,7 +43,7 @@ void Math2::ApplyRotation(Point& P, double angle_x, double angle_y,
     P.z = new_z;
 }
 
-void Math2::ApplyRotation(vector<Point>& points, double angle_x, double angle_y,
+void Math2::ApplyRotation(std::vector<Point>& points, double angle_x, double angle_y,
     double angle_z)
 {
     for (unsigned int i = 0; i < points.size(); i++) {
@@ -126,7 +126,7 @@ void Math2::RotatePoint(Point& P, float angle, float x, float y, float z)
     P.z = new_z;
 }
 
-void Math2::RotatePoints(vector<Point>& points, float angle, float x, float y,
+void Math2::RotatePoints(std::vector<Point>& points, float angle, float x, float y,
     float z)
 {
     float mag_sq = x * x + y * y + z * z;
@@ -171,7 +171,7 @@ void Math2::RotatePoints(vector<Point>& points, float angle, float x, float y,
     }
 }
 
-void Math2::PCA(const vector<Point>& points, Point& PC1, Point& PC2, Point& PC3,
+void Math2::PCA(const std::vector<Point>& points, Point& PC1, Point& PC2, Point& PC3,
     Point& mean)
 {
     mean.x = 0;
@@ -214,7 +214,7 @@ void Math2::PCA(const vector<Point>& points, Point& PC1, Point& PC2, Point& PC3,
     PC3.z = V.Get(2, 2);
 }
 
-void Math2::PlaneRegression(const vector<Point>& points, double& A, double& B,
+void Math2::PlaneRegression(const std::vector<Point>& points, double& A, double& B,
     double& C, double& D)
 {
     Point PC1, PC2, PC3, mean;

@@ -79,8 +79,6 @@ void ZPR::zprKeyboardDown(wxKeyEvent& event)
 
 void ZPR::zprKeyboardUp(wxKeyEvent& event) { m_ctrl_down = false; }
 
-#include <iostream>
-using namespace std;
 void ZPR::zprMouse(wxMouseEvent& event)
 {
     GLint viewport[4];

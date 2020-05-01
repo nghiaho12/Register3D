@@ -10,8 +10,6 @@ The main TrICP algorithm class. Designed to iteract with the GUI.
 #include "Point.h"
 #include <wx/wx.h>
 
-using namespace std;
-
 class ICP {
 public:
     ICP();

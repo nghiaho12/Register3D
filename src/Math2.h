@@ -4,23 +4,21 @@
 #include "Point.h"
 #include <vector>
 
-using namespace std;
-
 class Math2 {
 public:
     static void ApplyRotation(Point& P, double angle_x, double angle_y,
         double angle_z);
-    static void ApplyRotation(vector<Point>& points, double angle_x,
+    static void ApplyRotation(std::vector<Point>& points, double angle_x,
         double angle_y, double angle_z);
     static void RotatePoint(Point& P, float angle, float x, float y,
         float z); // Copy of glRotatef
-    static void RotatePoints(vector<Point>& points, float angle, float x, float y,
+    static void RotatePoints(std::vector<Point>& points, float angle, float x, float y,
         float z); // Copy of glRotatef
 
     // Principal Component Analysis
-    static void PCA(const vector<Point>& points, Point& PC1, Point& PC2,
+    static void PCA(const std::vector<Point>& points, Point& PC1, Point& PC2,
         Point& PC3, Point& Mean);
-    static void PlaneRegression(const vector<Point>& points, double& A, double& B,
+    static void PlaneRegression(const std::vector<Point>& points, double& A, double& B,
         double& C, double& D);
 
     // Lines, Planes

@@ -1,4 +1,4 @@
-#include "PLYReader.h"
+#include "PointReader.h"
 #include <fstream>
 #include <sstream>
 #include <iostream>

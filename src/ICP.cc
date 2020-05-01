@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iostream>
 #include <numeric>
+#include <sstream>
 
 #include "Global.h"
 #include "ICPPoint.h"
@@ -9,8 +10,6 @@
 #include "Misc.h"
 #include "Point.h"
 #include "PointOP.h"
-
-using namespace std;
 
 extern _Global Global;
 
@@ -22,17 +21,6 @@ ICP::ICP()
 }
 
 void ICP::SetLTS(float a) { m_LTS = a; }
-
-/*
-void ICP::SetPoints(vector <Point> &P1, vector <Point> &P2)
-{
-    m_points1.clear();
-        Global.scan2.clear();
-
-        for(unsigned int i=0; i < P1.size(); i++)
-                m_points1.push_back(ICPPoint(P1[i]));
-}
-*/
 
 bool ICP::ByDistSq(const ICPPoint& a, const ICPPoint& b)
 {
@@ -48,23 +36,25 @@ void ICP::Run(Matrix& Transform)
     }
 
     // Some distance statistics
-    vector<double> DistSq;
+    std::vector<double> DistSq;
 
     if (m_text) {
-        m_text->AppendText(wxT("Determining square distance to trim at ... "));
+        m_text->AppendText("Determining square distance to trim at ... ");
 
         while (m_app->Pending())
             m_app->Dispatch();
     }
 
-    for (unsigned int i = 0; i < m_points1.size(); i++) {
+    for (size_t i = 0; i < m_points1.size(); i++) {
         if (i % 100000 == 0) {
             if (m_text) {
-                m_text->AppendText(wxString::Format(wxT("%.0f%% "),
-                    i * 100 / (float)m_points1.size()));
+                std::stringstream ss;
+                ss << i * 100 / (float)m_points1.size() << " ";
+                m_text->AppendText(ss.str());
 
-                while (m_app->Pending())
+                while (m_app->Pending()) {
                     m_app->Dispatch();
+                }
             }
         }
 
@@ -80,38 +70,43 @@ void ICP::Run(Matrix& Transform)
     }
 
     if (m_text) {
-        m_text->AppendText(wxT("100%\n"));
+        m_text->AppendText("100%\n");
 
-        while (m_app->Pending())
+        while (m_app->Pending()) {
             m_app->Dispatch();
+        }
     }
 
     sort(DistSq.begin(), DistSq.end());
 
-    unsigned int pos = (int)(DistSq.size() * m_LTS);
+    size_t pos = (int)(DistSq.size() * m_LTS);
 
-    if (pos >= DistSq.size())
+    if (pos >= DistSq.size()) {
         pos = DistSq.size() - 1;
+    }
 
     double trimDist = DistSq[pos];
 
     if (m_text) {
-        m_text->AppendText(
-            wxString::Format(wxT("Trimming at distance: %e\n"), trimDist));
+        std::stringstream ss;
+        ss << "Trimming at distance: " << trimDist << "\n";
+        m_text->AppendText(ss.str());
 
-        while (m_app->Pending())
+        while (m_app->Pending()) {
             m_app->Dispatch();
+        }
     }
 
     // End stat
 
-    vector<ICPPoint> Points2p;
+    std::vector<ICPPoint> Points2p;
 
     if (m_text) {
-        m_text->AppendText(wxT("Trimming points ... "));
+        m_text->AppendText("Trimming points ... ");
 
-        while (m_app->Pending())
+        while (m_app->Pending()) {
             m_app->Dispatch();
+        }
     }
 
     // Find which points to use based on trimDist and also finds the centroid of
@@ -129,19 +124,23 @@ void ICP::Run(Matrix& Transform)
     double sum_dist = 0;
     int count = 0;
 
-    for (unsigned int i = 0; i < m_points1.size(); i++) {
+    for (size_t i = 0; i < m_points1.size(); i++) {
         if (i % 100000 == 0) {
             if (m_text) {
-                m_text->AppendText(wxString::Format(wxT("%.0f%% "),
-                    i * 100 / (float)m_points1.size()));
+                std::stringstream ss;
 
-                while (m_app->Pending())
+                ss << i * 100 / (float)m_points1.size() << " ";
+                m_text->AppendText(ss.str());
+
+                while (m_app->Pending()) {
                     m_app->Dispatch();
+                }
             }
         }
 
-        if (m_points1[i].dist_sq > trimDist)
+        if (m_points1[i].dist_sq > trimDist) {
             continue;
+        }
 
         // Points2p.push_back(m_points1[i].nearest);
         sum_dist += m_points1[i].dist_sq;
@@ -158,10 +157,11 @@ void ICP::Run(Matrix& Transform)
     }
 
     if (m_text) {
-        m_text->AppendText(wxT("100%\n"));
+        m_text->AppendText("100%\n");
 
-        while (m_app->Pending())
+        while (m_app->Pending()) {
             m_app->Dispatch();
+        }
     }
 
     m_MSE = sum_dist / count;
@@ -175,22 +175,6 @@ void ICP::Run(Matrix& Transform)
     centroid2.y /= count;
     centroid2.z /= count;
 
-    cout << "CENTROIDS: " << centroid1.x << " " << centroid1.y << " "
-         << centroid1.z << " --- " << centroid2.x << " " << centroid2.y << " "
-         << centroid2.z << endl;
-
-    /*
-          ANN ANN_points2p;
-
-          for(unsigned int i=0; i < Points2p.size(); i++)
-          {
-                  Points2p[i].x -= centroid2.x;
-                  Points2p[i].y -= centroid2.y;
-                  Points2p[i].z -= centroid2.z;
-          }
-
-          ANN_points2p.SetPoints(Points2p);
-  */
     /************************************
    * FIND OPTIMAL ROTATION USING SVD
    ************************************/
@@ -245,10 +229,11 @@ void ICP::Run(Matrix& Transform)
     }
 
     if (m_text) {
-        m_text->AppendText(wxT("100%\n"));
+        m_text->AppendText("100%\n");
 
-        while (m_app->Pending())
+        while (m_app->Pending()) {
             m_app->Dispatch();
+        }
     }
 
     H.SVD(U, S, V);
@@ -296,25 +281,24 @@ void ICP::Run(Matrix& Transform)
 
     // Clean up memory
     {
-        vector<ICPPoint> Empty;
+        std::vector<ICPPoint> Empty;
         Points2p.swap(Empty);
     }
 }
 
 void ICP::SetMaxPoints(unsigned int max) { m_max_points = max; }
 
-void ICP::SetPoints(vector<Point>& P1, vector<Point>& P2,
+void ICP::SetPoints(std::vector<Point>& P1, std::vector<Point>& P2,
     float dist_threshold)
 {
     const float sq_dist = dist_threshold * dist_threshold;
 
     if (m_max_points == 0) {
-        cerr << "ICP: Need to set m_max_points before running SetPoints" << endl;
-        exit(1);
+        throw std::runtime_error("ICP: Need to set m_max_points before running SetPoints");
     }
 
     ANN Point1DB, Point2DB;
-    vector<Point> filtered1, filtered2;
+    std::vector<Point> filtered1, filtered2;
     Point start, end;
 
     reverseable_shuffle_forward(P1, Global.table1);
@@ -332,40 +316,47 @@ void ICP::SetPoints(vector<Point>& P1, vector<Point>& P2,
     // Downsample based on a factor of m_max_points
     unsigned int k = m_max_points * 2;
 
-    if (P1.size() > k)
+    if (P1.size() > k) {
         filtered1.resize(k);
-    else
+    } else {
         filtered1.resize(P1.size());
+    }
 
-    for (unsigned int i = 0; i < filtered1.size(); i++)
+    for (size_t i = 0; i < filtered1.size(); i++) {
         filtered1[i] = P1[i];
+    }
 
-    if (P2.size() > k)
+    if (P2.size() > k) {
         filtered2.resize(k);
-    else
+    } else {
         filtered2.resize(P2.size());
+    }
 
-    for (unsigned int i = 0; i < filtered2.size(); i++)
+    for (size_t i = 0; i < filtered2.size(); i++) {
         filtered2[i] = P2[i];
+    }
 
     // This consumes the most memory out of the entire program
     // Every 1 million point uses about 200MB of memory when loaded using ANN
     Point2DB.SetPoints(filtered2);
 
     // for displaying purposes
-    if (m_text)
-        m_text->AppendText(
-            wxT("Downsampling and filtering first scan for ICP ... "));
+    if (m_text) {
+        m_text->AppendText("Downsampling and filtering first scan for ICP ... ");
+    }
 
-    for (unsigned int i = 0;
+    for (size_t i = 0;
          i < filtered1.size() && m_points1.size() < m_max_points; i++) {
         if (i % 100000 == 0) {
             if (m_text) {
-                m_text->AppendText(wxString::Format(wxT("%.0f%% "),
-                    i * 100 / (float)filtered1.size()));
+                std::stringstream ss;
 
-                while (m_app->Pending())
+                ss << i * 100 / (float)filtered1.size() << "% ";
+                m_text->AppendText(ss.str());
+
+                while (m_app->Pending()) {
                     m_app->Dispatch();
+                }
             }
         }
 
@@ -379,39 +370,43 @@ void ICP::SetPoints(vector<Point>& P1, vector<Point>& P2,
     }
 
     if (m_text) {
-        m_text->AppendText(wxT("100%\n"));
-        m_text->AppendText(wxString::Format(
-            wxT("Number of points after downsampling/filtering: %d\n"),
-            m_points1.size()));
+        m_text->AppendText("100%\n");
 
-        while (m_app->Pending())
+        std::stringstream ss;
+        ss << "Number of points after downsampling/filtering: " << m_points1.size() << "\n";
+        m_text->AppendText(ss.str());
+
+        while (m_app->Pending()) {
             m_app->Dispatch();
+        }
     }
 
     Point2DB.Free();
 
     {
-        vector<Point> empty;
+        std::vector<Point> empty;
         filtered1.swap(empty);
     }
 
     Point1DB.SetPoints(m_points1);
 
-    if (m_text)
-        m_text->AppendText(
-            wxT("Downsampling and filtering second scan for ICP ... "));
+    if (m_text) {
+        m_text->AppendText("Downsampling and filtering second scan for ICP ... ");
+    }
 
     // Do the same again
 
-    for (unsigned int i = 0;
+    for (size_t i = 0;
          i < filtered2.size() && m_points2.size() < m_max_points; i++) {
         if (i % 100000 == 0) {
             if (m_text) {
-                m_text->AppendText(wxString::Format(wxT("%.0f%% "),
-                    i * 100 / (float)filtered2.size()));
+                std::stringstream ss;
+                ss << i * 100 / (float)filtered2.size() << " ";
+                m_text->AppendText(ss.str());
 
-                while (m_app->Pending())
+                while (m_app->Pending()) {
                     m_app->Dispatch();
+                }
             }
         }
 
@@ -420,17 +415,17 @@ void ICP::SetPoints(vector<Point>& P1, vector<Point>& P2,
 
         Point1DB.FindClosest(filtered2[i], dist, index);
 
-        if (dist < sq_dist)
+        if (dist < sq_dist) {
             m_points2.push_back(filtered2[i]);
+        }
     }
-
-    std::cout << "Number of points after downsampling: " << m_points2.size() << "\n";
 
     if (m_text) {
         m_text->AppendText(wxT("100%\n"));
-        m_text->AppendText(wxString::Format(
-            wxT("Number of points after downsampling/filtering: %d\n"),
-            m_points2.size()));
+
+        std::stringstream ss;
+        ss << "Number of points after downsampling/filtering: " << m_points2.size() << "\n";
+        m_text->AppendText(ss.str());
 
         while (m_app->Pending()) {
             m_app->Dispatch();
@@ -461,7 +456,7 @@ void ICP::SetwxApp(wxApp* a) // Used for m_text feedback from ICP
     m_app = a;
 }
 
-void ICP::CalcOverlappingRegion(vector<Point>& P1, vector<Point>& P2,
+void ICP::CalcOverlappingRegion(std::vector<Point>& P1, std::vector<Point>& P2,
     Point& start, Point& end)
 {
     // Calculates the overlapping region of the bounding box around thw two point
@@ -479,39 +474,59 @@ void ICP::CalcOverlappingRegion(vector<Point>& P1, vector<Point>& P2,
     box1_end = box1_start;
     box2_end = box1_start;
 
-    for (unsigned int i = 0; i < P1.size(); i++) {
-        if (P1[i].x < box1_start.x)
+    for (size_t i = 0; i < P1.size(); i++) {
+        if (P1[i].x < box1_start.x) {
             box1_start.x = P1[i].x;
-        if (P1[i].y < box1_start.y)
+        }
+
+        if (P1[i].y < box1_start.y) {
             box1_start.y = P1[i].y;
-        if (P1[i].z < box1_start.z)
+        }
+
+        if (P1[i].z < box1_start.z) {
             box1_start.z = P1[i].z;
+        }
 
-        if (P1[i].x > box1_end.x)
+        if (P1[i].x > box1_end.x) {
             box1_end.x = P1[i].x;
-        if (P1[i].y > box1_end.y)
+        }
+
+        if (P1[i].y > box1_end.y) {
             box1_end.y = P1[i].y;
-        if (P1[i].z > box1_end.z)
+        }
+
+        if (P1[i].z > box1_end.z) {
             box1_end.z = P1[i].z;
+        }
     }
 
-    for (unsigned int i = 0; i < P2.size(); i++) {
-        if (P2[i].x < box2_start.x)
+    for (size_t i = 0; i < P2.size(); i++) {
+        if (P2[i].x < box2_start.x) {
             box2_start.x = P2[i].x;
-        if (P2[i].y < box2_start.y)
-            box2_start.y = P2[i].y;
-        if (P2[i].z < box2_start.z)
-            box2_start.z = P2[i].z;
+        }
 
-        if (P2[i].x > box2_end.x)
+        if (P2[i].y < box2_start.y) {
+            box2_start.y = P2[i].y;
+        }
+
+        if (P2[i].z < box2_start.z) {
+            box2_start.z = P2[i].z;
+        }
+
+        if (P2[i].x > box2_end.x) {
             box2_end.x = P2[i].x;
-        if (P2[i].y > box2_end.y)
+        }
+
+        if (P2[i].y > box2_end.y) {
             box2_end.y = P2[i].y;
-        if (P2[i].z > box2_end.z)
+        }
+
+        if (P2[i].z > box2_end.z) {
             box2_end.z = P2[i].z;
+        }
     }
 
-    vector<float> s;
+    std::vector<float> s;
 
     // x
     s.push_back(box1_start.x);
@@ -519,7 +534,7 @@ void ICP::CalcOverlappingRegion(vector<Point>& P1, vector<Point>& P2,
     s.push_back(box2_start.x);
     s.push_back(box2_end.x);
 
-    sort(s.begin(), s.end());
+    std::sort(s.begin(), s.end());
 
     start.x = s[1];
     end.x = s[2];
@@ -531,7 +546,7 @@ void ICP::CalcOverlappingRegion(vector<Point>& P1, vector<Point>& P2,
     s.push_back(box2_start.y);
     s.push_back(box2_end.y);
 
-    sort(s.begin(), s.end());
+    std::sort(s.begin(), s.end());
 
     start.y = s[1];
     end.y = s[2];
@@ -543,7 +558,7 @@ void ICP::CalcOverlappingRegion(vector<Point>& P1, vector<Point>& P2,
     s.push_back(box2_start.z);
     s.push_back(box2_end.z);
 
-    sort(s.begin(), s.end());
+    std::sort(s.begin(), s.end());
 
     start.z = s[1];
     end.z = s[2];

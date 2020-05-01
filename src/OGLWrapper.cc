@@ -143,7 +143,7 @@ void OGLWrapper::Get2Dto3DwithoutZ(int x, int y, float& zbuffer, float& xf,
     GLint viewport[4];
     GLdouble modelview[16];
     GLdouble projection[16];
-    GLfloat winX, winY, winZ;
+    GLfloat winX, winY, winZ=0;
     GLdouble posX, posY, posZ;
 
     glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
@@ -153,6 +153,12 @@ void OGLWrapper::Get2Dto3DwithoutZ(int x, int y, float& zbuffer, float& xf,
     winX = (float)x;
     winY = (float)viewport[3] - (float)y;
     glReadPixels(x, int(winY), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ);
+
+    auto err = glGetError();
+
+    if (err != GL_NO_ERROR) {
+        std::cerr << "glReadPixels GL error: " << err << "\n";
+    }
 
     zbuffer = winZ;
 

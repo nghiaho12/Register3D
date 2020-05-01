@@ -8,8 +8,6 @@
 #include <iostream>
 #include <vector>
 
-using namespace std;
-
 int MyRandRange(int x); // Range from [0, x-1], used with random_shuffle()
 
 template <class T>

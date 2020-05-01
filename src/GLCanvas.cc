@@ -16,7 +16,7 @@ EVT_SIZE(GLCanvas::OnResize)
 EVT_ERASE_BACKGROUND(GLCanvas::OnEraseBackground)
 END_EVENT_TABLE()
 
-int attrib_list[] = { WX_GL_RGBA, WX_GL_DOUBLEBUFFER };
+static int attrib_list[] = { WX_GL_RGBA, WX_GL_DOUBLEBUFFER, WX_GL_DEPTH_SIZE, 16, 0};
 
 GLCanvas::GLCanvas(wxWindow* parent, wxWindowID id, ModeType mode)
     : wxGLCanvas(parent, id, attrib_list, wxDefaultPosition, wxSize(200, 200)),
@@ -49,8 +49,6 @@ GLCanvas::GLCanvas(wxWindow* parent, wxWindowID id, ModeType mode)
 
 void GLCanvas::OnPaint(wxPaintEvent& event)
 {
-    wxPaintDC dc(this);
-
     SetCurrent(m_context);
 
     if (!m_init_GL) {
@@ -65,14 +63,17 @@ void GLCanvas::OnMouse(wxMouseEvent& event)
 {
     m_is_focused = false;
 
-    if (event.GetX() >= 0 || event.GetY() >= 0)
+    if (event.GetX() >= 0 || event.GetY() >= 0) {
         m_is_focused = true;
+    }
 
-    if (event.Entering())
+    if (event.Entering()) {
         m_is_focused = true;
+    }
 
-    if (!m_is_focused)
+    if (!m_is_focused) {
         return;
+    }
 
     SetCurrent(m_context);
 
@@ -196,43 +197,49 @@ void GLCanvas::OnKeyDown(wxKeyEvent& event)
         // m_control_points.clear();
         // m_spheres.clear();
 
-        if (m_control_points.size())
+        if (m_control_points.size()) {
             m_control_points.erase(m_control_points.end() - 1);
+        }
 
         break;
     }
     case 'S': {
-        if (m_show_spheres)
+        if (m_show_spheres) {
             m_show_spheres = false;
-        else
+        } else {
             m_show_spheres = true;
+        }
 
         break;
     }
     case 'C': {
-        if (m_use_mono_colour)
+        if (m_use_mono_colour) {
             m_use_mono_colour = false;
-        else
+        } else {
             m_use_mono_colour = true;
+        }
 
         break;
     }
     case 'D': {
-        if (m_mask_spheres)
+        if (m_mask_spheres) {
             m_mask_spheres = false;
-        else
+        } else {
             m_mask_spheres = true;
+        }
 
         break;
     }
     case 'M': {
-        if (m_selected_points.size() <= 0)
+        if (m_selected_points.size() <= 0) {
             return;
+        }
 
-        if (m_move_point_on)
+        if (m_move_point_on) {
             m_move_point_on = false;
-        else
+        } else {
             m_move_point_on = true;
+        }
 
         break;
     }
@@ -265,121 +272,123 @@ void GLCanvas::RenderScene()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    if (!IsEnabled())
-        goto skip;
-
-    if ((m_fast_rendering_on || m_move_point_on) && m_init_vertex_array) {
-        glEnableClientState(GL_COLOR_ARRAY);
-        glEnableClientState(GL_VERTEX_ARRAY);
-
-        glPointSize(1.0);
-        glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_vertex_array_id);
-        glVertexPointer(3, GL_FLOAT, 0, NULL);
-
-        if (m_use_mono_colour)
-            // glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_mono_colour_array_id);
-            glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_false_colour_id);
-        else
-            glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_colour_array_id);
-
-        glColorPointer(3, GL_UNSIGNED_BYTE, 0, NULL);
-        glDrawArrays(GL_POINTS, 0, m_VBO_size);
-
-        glDisableClientState(GL_COLOR_ARRAY);
-        glDisableClientState(GL_VERTEX_ARRAY);
-
-        // Bring back to normal operations
-        glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-    } else {
-        if (m_is_first_scan && Global.scan1.size()) // scan1
-        {
+    if (IsEnabled()) {
+        if ((m_fast_rendering_on || m_move_point_on) && m_init_vertex_array) {
             glEnableClientState(GL_COLOR_ARRAY);
             glEnableClientState(GL_VERTEX_ARRAY);
 
-            if (m_use_mono_colour)
-                glColorPointer(3, GL_UNSIGNED_BYTE, 0, &Global.false_colour1[0]);
-            else
-                glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &Global.scan1[0].r);
+            glPointSize(1.0);
+            glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_vertex_array_id);
+            glVertexPointer(3, GL_FLOAT, 0, NULL);
 
-            glVertexPointer(3, GL_FLOAT, sizeof(Point), &Global.scan1[0]);
-            glDrawArrays(GL_POINTS, 0, Global.scan1.size());
+            if (m_use_mono_colour) {
+                // glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_mono_colour_array_id);
+                glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_false_colour_id);
+            } else {
+                glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_colour_array_id);
+            }
 
-            glDisableClientState(GL_COLOR_ARRAY);
-            glDisableClientState(GL_VERTEX_ARRAY);
-        } else if (!m_is_first_scan && Global.scan2.size()) // scan 2
-        {
-            glEnableClientState(GL_COLOR_ARRAY);
-            glEnableClientState(GL_VERTEX_ARRAY);
-
-            if (m_use_mono_colour)
-                glColorPointer(3, GL_UNSIGNED_BYTE, 0, &Global.false_colour2[0]);
-            else
-                glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &Global.scan2[0].r);
-
-            glVertexPointer(3, GL_FLOAT, sizeof(Point), &Global.scan2[0]);
-            glDrawArrays(GL_POINTS, 0, Global.scan2.size());
+            glColorPointer(3, GL_UNSIGNED_BYTE, 0, NULL);
+            glDrawArrays(GL_POINTS, 0, m_VBO_size);
 
             glDisableClientState(GL_COLOR_ARRAY);
             glDisableClientState(GL_VERTEX_ARRAY);
 
-            if (m_mask_spheres && m_spheres.size() == 1) {
-                float RadiusSq = m_spheres[0].radius * m_spheres[0].radius;
+            // Bring back to normal operations
+            glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+        } else {
+            if (m_is_first_scan && Global.scan1.size()) {
+                glEnableClientState(GL_COLOR_ARRAY);
+                glEnableClientState(GL_VERTEX_ARRAY);
 
-                glBegin(GL_POINTS);
-
-                for (unsigned int i = 0; i < Global.scan2.size(); i++) {
-                    Point& P = Global.scan2[i];
-
-                    float dx = P.x - m_spheres[0].x;
-                    float dy = P.y - m_spheres[0].y;
-                    float dz = P.z - m_spheres[0].z;
-
-                    if (fabs((dx * dx + dy * dy + dz * dz) - RadiusSq) < 2.0) {
-                        glColor3f(0, 1, 0);
-                        glVertex3f(P.x, P.y, P.z);
-                    }
+                if (m_use_mono_colour) {
+                    glColorPointer(3, GL_UNSIGNED_BYTE, 0, &Global.false_colour1[0]);
+                } else {
+                    glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &Global.scan1[0].r);
                 }
 
-                glEnd();
-            } else if (m_mask_spheres && m_spheres.size() == 2) {
-                float RadiusSq1 = m_spheres[0].radius * m_spheres[0].radius;
-                float RadiusSq2 = m_spheres[1].radius * m_spheres[1].radius;
+                glVertexPointer(3, GL_FLOAT, sizeof(Point), &Global.scan1[0]);
+                glDrawArrays(GL_POINTS, 0, Global.scan1.size());
 
-                glBegin(GL_POINTS);
+                glDisableClientState(GL_COLOR_ARRAY);
+                glDisableClientState(GL_VERTEX_ARRAY);
+            } else if (!m_is_first_scan && Global.scan2.size()) {
+                glEnableClientState(GL_COLOR_ARRAY);
+                glEnableClientState(GL_VERTEX_ARRAY);
 
-                for (unsigned int i = 0; i < Global.scan2.size(); i++) {
-                    Point& P = Global.scan2[i];
-
-                    float dx1 = P.x - m_spheres[0].x;
-                    float dy1 = P.y - m_spheres[0].y;
-                    float dz1 = P.z - m_spheres[0].z;
-
-                    float dx2 = P.x - m_spheres[1].x;
-                    float dy2 = P.y - m_spheres[1].y;
-                    float dz2 = P.z - m_spheres[1].z;
-
-                    float DistSq1 = dx1 * dx1 + dy1 * dy1 + dz1 * dz1;
-                    float DistSq2 = dx2 * dx2 + dy2 * dy2 + dz2 * dz2;
-
-                    if (fabs(DistSq1 - RadiusSq1) < 2.0 && fabs(DistSq2 - RadiusSq2) < 2.0) {
-                        glColor3f(0, 1, 0);
-                        glVertex3f(P.x, P.y, P.z);
-                    }
+                if (m_use_mono_colour) {
+                    glColorPointer(3, GL_UNSIGNED_BYTE, 0, &Global.false_colour2[0]);
+                } else {
+                    glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &Global.scan2[0].r);
                 }
 
-                glEnd();
-            } // end assistive circle rendering
-        } // end scan1/scan2 rendering
+                glVertexPointer(3, GL_FLOAT, sizeof(Point), &Global.scan2[0]);
+                glDrawArrays(GL_POINTS, 0, Global.scan2.size());
+
+                glDisableClientState(GL_COLOR_ARRAY);
+                glDisableClientState(GL_VERTEX_ARRAY);
+
+                if (m_mask_spheres && m_spheres.size() == 1) {
+                    float RadiusSq = m_spheres[0].radius * m_spheres[0].radius;
+
+                    glBegin(GL_POINTS);
+
+                    for (size_t i = 0; i < Global.scan2.size(); i++) {
+                        Point& P = Global.scan2[i];
+
+                        float dx = P.x - m_spheres[0].x;
+                        float dy = P.y - m_spheres[0].y;
+                        float dz = P.z - m_spheres[0].z;
+
+                        if (fabs((dx * dx + dy * dy + dz * dz) - RadiusSq) < 2.0) {
+                            glColor3f(0, 1, 0);
+                            glVertex3f(P.x, P.y, P.z);
+                        }
+                    }
+
+                    glEnd();
+                } else if (m_mask_spheres && m_spheres.size() == 2) {
+                    float RadiusSq1 = m_spheres[0].radius * m_spheres[0].radius;
+                    float RadiusSq2 = m_spheres[1].radius * m_spheres[1].radius;
+
+                    glBegin(GL_POINTS);
+
+                    for (size_t i = 0; i < Global.scan2.size(); i++) {
+                        Point& P = Global.scan2[i];
+
+                        float dx1 = P.x - m_spheres[0].x;
+                        float dy1 = P.y - m_spheres[0].y;
+                        float dz1 = P.z - m_spheres[0].z;
+
+                        float dx2 = P.x - m_spheres[1].x;
+                        float dy2 = P.y - m_spheres[1].y;
+                        float dz2 = P.z - m_spheres[1].z;
+
+                        float DistSq1 = dx1 * dx1 + dy1 * dy1 + dz1 * dz1;
+                        float DistSq2 = dx2 * dx2 + dy2 * dy2 + dz2 * dz2;
+
+                        if (std::abs(DistSq1 - RadiusSq1) < 2.0 && fabs(DistSq2 - RadiusSq2) < 2.0) {
+                            glColor3f(0, 1, 0);
+                            glVertex3f(P.x, P.y, P.z);
+                        }
+                    }
+
+                    glEnd();
+                } // end assistive circle rendering
+            } // end scan1/scan2 rendering
+        }
+
+        for (size_t i = 0; i < m_control_points.size(); i++) {
+            DrawControlPoints(m_control_points[i]);
+        }
+
+        if (m_show_spheres) {
+            for (size_t i = 0; i < m_spheres.size(); i++) {
+                DrawSphere(m_spheres[i]);
+            }
+        }
     }
 
-    for (unsigned int i = 0; i < m_control_points.size(); i++)
-        DrawControlPoints(m_control_points[i]);
-
-    if (m_show_spheres)
-        for (unsigned int i = 0; i < m_spheres.size(); i++)
-            DrawSphere(m_spheres[i]);
-
-skip:
     // Axis
     Point P;
     m_ZPR.GetReference(P.x, P.y, P.z);
@@ -625,6 +634,8 @@ bool GLCanvas::SelectNearestControlPoint(int mousex, int mousey)
 {
     // Find the nearest control point
     // We'll search in m_control_points, Cuboides, Cylinders
+    constexpr float max_dist = 20.0f;
+
     Point* point_ptr = NULL;
 
     int x, y;
@@ -632,14 +643,14 @@ bool GLCanvas::SelectNearestControlPoint(int mousex, int mousey)
     float min_dist = FLT_MAX;
 
     // Search control points
-    for (unsigned int i = 0; i < m_control_points.size(); i++) {
+    for (size_t i = 0; i < m_control_points.size(); i++) {
         Point& P = m_control_points[i];
 
         OGLWrapper::Get3Dto2D(P.x, P.y, P.z, x, y, zbuffer);
 
         float dist = sqrt((float)(x - mousex) * (x - mousex) + (y - mousey) * (y - mousey));
 
-        if (dist < min_dist && dist < 20.0f) {
+        if (dist < min_dist && dist < max_dist) {
             min_dist = dist;
 
             point_ptr = &P;
@@ -648,7 +659,7 @@ bool GLCanvas::SelectNearestControlPoint(int mousex, int mousey)
 
     m_selected_points.clear();
 
-    if (min_dist < 20.0f) {
+    if (min_dist < max_dist) {
         m_selected_points.push_back(point_ptr);
     }
 
@@ -741,7 +752,7 @@ void GLCanvas::ClearSphere() { m_spheres.clear(); }
 
 bool GLCanvas::GetIsFocused() { return m_is_focused; }
 
-void GLCanvas::LoadPoints(vector<Point> points)
+void GLCanvas::LoadPoints(std::vector<Point> points)
 {
     SetCurrent(m_context);
 
@@ -764,10 +775,11 @@ void GLCanvas::LoadPoints(vector<Point> points)
     };
 
     // Create a VBO
-    unsigned int limit = MAX_POINTS_ON_GPU;
+    size_t limit = MAX_POINTS_ON_GPU;
 
-    if (points.size() < limit)
+    if (points.size() < limit) {
         limit = points.size();
+    }
 
     m_VBO_size = limit;
 
@@ -788,7 +800,7 @@ void GLCanvas::LoadPoints(vector<Point> points)
         return;
     }
 
-    for (unsigned int i = 0; i < limit; i++) {
+    for (size_t i = 0; i < limit; i++) {
         v[i].a = points[i].x;
         v[i].b = points[i].y;
         v[i].c = points[i].z;
@@ -803,7 +815,7 @@ void GLCanvas::LoadPoints(vector<Point> points)
     }
 
     // False colour
-    for (unsigned int i = 0; i < limit; i++) {
+    for (size_t i = 0; i < limit; i++) {
         if (points[i].z <= Global.false_colour_min_z) {
             false_colour[i].a = Global.false_colour_r[0];
             false_colour[i].b = Global.false_colour_g[0];
@@ -828,44 +840,43 @@ void GLCanvas::LoadPoints(vector<Point> points)
 
     bool err = false;
 
+    auto checkError = [&]() {
+        if (glGetError() != GL_NO_ERROR) {
+            err = true;
+        }
+    };
+
     // Load the vertex only
     glGenBuffersARB(1, &m_vertex_array_id);
-    if (glGetError() != GL_NO_ERROR)
-        err = true;
+
     glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_vertex_array_id);
-    if (glGetError() != GL_NO_ERROR)
-        err = true;
+    checkError();
     glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(float3) * limit, v,
         GL_STATIC_DRAW_ARB);
-    if (glGetError() != GL_NO_ERROR)
-        err = true;
+    checkError();
 
     // Load the color only
     glGenBuffersARB(1, &m_mono_colour_array_id);
     glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_mono_colour_array_id);
     glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(uchar3) * limit, mono_colour,
         GL_STATIC_DRAW_ARB);
-    if (glGetError() != GL_NO_ERROR)
-        err = true;
+    checkError();
 
     glGenBuffersARB(1, &m_colour_array_id);
     glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_colour_array_id);
     glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(uchar3) * limit, full_colour,
         GL_STATIC_DRAW_ARB);
-    if (glGetError() != GL_NO_ERROR)
-        err = true;
+    checkError();
 
     glGenBuffersARB(1, &m_false_colour_id);
     glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_false_colour_id);
     glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(uchar3) * limit, false_colour,
         GL_STATIC_DRAW_ARB);
-    if (glGetError() != GL_NO_ERROR)
-        err = true;
+    checkError();
 
     // revert back to normal operation
     glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-    if (glGetError() != GL_NO_ERROR)
-        err = true;
+    checkError();
 
     if (err) {
         wxMessageDialog* dial = new wxMessageDialog(
@@ -893,6 +904,20 @@ void GLCanvas::SetIsFirstScan(bool set) { m_is_first_scan = set; }
 
 void GLCanvas::InitGL()
 {
+    GLenum err = glewInit();
+
+    if (GLEW_OK != err) {
+        std::string err_msg("Error initialising GLEW: ");
+        err_msg.append(reinterpret_cast<const char*>(glewGetErrorString(err)));
+
+        wxMessageDialog* dial = new wxMessageDialog(
+            NULL, err_msg, wxT("Error"), wxOK | wxICON_ERROR);
+        dial->ShowModal();
+        dial->Destroy();
+
+        std::cerr << err_msg << std::endl;
+    }
+
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
 
@@ -904,63 +929,54 @@ void GLCanvas::InitGL()
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    GLenum err = glewInit();
-
-    if (GLEW_OK != err) {
-        char* str = (char*)glewGetErrorString(err);
-
-        wxMessageDialog* dial = new wxMessageDialog(
-            NULL, wxT("Error initialising GLEW: ") + wxString::FromAscii(str),
-            wxT("Error"), wxOK | wxICON_ERROR);
-        dial->ShowModal();
-        dial->Destroy();
-
-        cerr << "Error: " << glewGetErrorString(err) << endl;
-        exit(1);
-    }
 }
 
 void GLCanvas::OnEraseBackground(wxEraseEvent& WXUNUSED(event)) {}
 
-vector<Point>& GLCanvas::GetControlPoints() { return m_control_points; }
+std::vector<Point>& GLCanvas::GetControlPoints() { return m_control_points; }
 
 void GLCanvas::RenderMerged()
 {
-    if (Global.scan1.size() == 0 && Global.scan2.size() == 0)
+    if (Global.scan1.size() == 0 && Global.scan2.size() == 0) {
         return;
+    }
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    if (m_use_mono_colour)
+    if (m_use_mono_colour) {
         glDisableClientState(GL_COLOR_ARRAY);
-    else
+    } else {
         glEnableClientState(GL_COLOR_ARRAY);
+    }
 
     if (m_fast_rendering_on) {
-        if (m_use_mono_colour)
+        if (m_use_mono_colour) {
             glColor3f(1.0, 0.0, 0.0);
+        }
 
         glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_scan1_fast[0].r);
         glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_scan1_fast[0]);
         glDrawArrays(GL_POINTS, 0, m_scan1_fast.size());
 
-        if (m_use_mono_colour)
+        if (m_use_mono_colour) {
             glColor3f(0.0, 1.0, 0.0);
+        }
 
         glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_scan2_fast[0].r);
         glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_scan2_fast[0]);
         glDrawArrays(GL_POINTS, 0, m_scan2_fast.size());
     } else {
-        if (m_use_mono_colour)
+        if (m_use_mono_colour) {
             glColor3f(1.0, 0.0, 0.0);
+        }
 
         glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &Global.scan1[0].r);
         glVertexPointer(3, GL_FLOAT, sizeof(Point), &Global.scan1[0]);
         glDrawArrays(GL_POINTS, 0, Global.scan1.size());
 
-        if (m_use_mono_colour)
+        if (m_use_mono_colour) {
             glColor3f(0.0, 1.0, 0.0);
+        }
 
         glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &Global.scan2[0].r);
         glVertexPointer(3, GL_FLOAT, sizeof(Point), &Global.scan2[0]);
@@ -981,26 +997,30 @@ void GLCanvas::ViewTopdown() { m_ZPR.SetView(0); }
 
 void GLCanvas::SetwxTextCtrl(wxTextCtrl* t) { m_text = t; }
 
-void GLCanvas::LoadPointsForFastview(vector<Point>& p1, vector<Point>& p2)
+void GLCanvas::LoadPointsForFastview(std::vector<Point>& p1, std::vector<Point>& p2)
 {
     reverseable_shuffle_forward(p1, Global.table1);
     reverseable_shuffle_forward(p2, Global.table2);
 
-    if (p1.size() < MAX_POINTS_ON_GPU)
+    if (p1.size() < MAX_POINTS_ON_GPU) {
         m_scan1_fast.resize(p1.size());
-    else
+    } else {
         m_scan1_fast.resize(MAX_POINTS_ON_GPU);
+    }
 
-    if (p2.size() < MAX_POINTS_ON_GPU)
+    if (p2.size() < MAX_POINTS_ON_GPU) {
         m_scan2_fast.resize(p2.size());
-    else
+    } else {
         m_scan2_fast.resize(MAX_POINTS_ON_GPU);
+    }
 
-    for (unsigned int i = 0; i < m_scan1_fast.size(); i++)
+    for (size_t i = 0; i < m_scan1_fast.size(); i++) {
         m_scan1_fast[i] = p1[i];
+    }
 
-    for (unsigned int i = 0; i < m_scan2_fast.size(); i++)
+    for (size_t i = 0; i < m_scan2_fast.size(); i++) {
         m_scan2_fast[i] = p2[i];
+    }
 
     reverseable_shuffle_backward(p1, Global.table1);
     reverseable_shuffle_backward(p2, Global.table2);
@@ -1014,10 +1034,11 @@ bool GLCanvas::Draw()
 
     SetCurrent(m_context);
 
-    if (m_mode == STITCH_MODE)
+    if (m_mode == STITCH_MODE) {
         RenderScene();
-    else
+    } else {
         RenderMerged();
+    }
 
     return true;
 }

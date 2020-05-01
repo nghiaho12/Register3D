@@ -11,8 +11,6 @@
 #include <wx/dcclient.h>
 #include <wx/glcanvas.h>
 
-using namespace std;
-
 enum ModeType { STITCH_MODE,
     MERGED_MODE };
 
@@ -33,12 +31,12 @@ public:
     ZPR& GetZPR();
     bool GetIsFocused();
     void SetIsFirstScan(bool set);
-    vector<Point>& GetControlPoints();
+    std::vector<Point>& GetControlPoints();
     void CentreView();
     void ViewTopdown();
     void SetwxTextCtrl(wxTextCtrl* t); // Used for m_text feedback from ICP
-    void LoadPoints(vector<Point> points);
-    void LoadPointsForFastview(vector<Point>& p1, vector<Point>& p2);
+    void LoadPoints(std::vector<Point> points);
+    void LoadPointsForFastview(std::vector<Point>& p1, std::vector<Point>& p2);
 
     DECLARE_EVENT_TABLE()
 
@@ -69,16 +67,16 @@ private:
     GLuint m_colour_array_id;
     GLuint m_mono_colour_array_id;
     GLuint m_false_colour_id;
-    vector<Point> m_scan1_fast;
-    vector<Point> m_scan2_fast;
+    std::vector<Point> m_scan1_fast;
+    std::vector<Point> m_scan2_fast;
     GLUquadric* m_quadric;
     bool m_init_GL;
     bool m_reshape;
 
     // State variables governing user interaction
-    vector<Point> m_control_points;
-    vector<Point*> m_selected_points; // Currently selected point, for moving
-    vector<Sphere> m_spheres;
+    std::vector<Point> m_control_points;
+    std::vector<Point*> m_selected_points; // Currently selected point, for moving
+    std::vector<Sphere> m_spheres;
 
     int m_last_mouse_x;
     int m_last_mouse_y;

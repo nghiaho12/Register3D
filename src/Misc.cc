@@ -1,11 +1,11 @@
 #include "Misc.h"
-#include <tr1/random> // For better random number, Windows one sucks big time
+#include <random> // For better random number, Windows one sucks big time
 
-tr1::mt19937 eng;
+std::mt19937 eng;
 
 int MyRandRange(int x)
 {
-    tr1::uniform_int<int> unif(0, x - 1);
+    std::uniform_int_distribution<> unif(0, x - 1);
 
     return unif(eng);
 }

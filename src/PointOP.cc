@@ -7,9 +7,7 @@
 #define M_PI 3.14159265358979323846 /* pi */
 #endif
 
-using namespace std;
-
-void PointOP::ApplyTransform(vector<Point>& P, Matrix& T)
+void PointOP::ApplyTransform(std::vector<Point>& P, Matrix& T)
 {
     for (unsigned int i = 0; i < P.size(); i++) {
         float x = P[i].x;
@@ -26,7 +24,7 @@ void PointOP::ApplyTransform(vector<Point>& P, Matrix& T)
     }
 }
 
-void PointOP::ApplyTransform(vector<ICPPoint>& P, Matrix& T)
+void PointOP::ApplyTransform(std::vector<ICPPoint>& P, Matrix& T)
 {
     for (unsigned int i = 0; i < P.size(); i++) {
         float x = P[i].x;
@@ -43,7 +41,7 @@ void PointOP::ApplyTransform(vector<ICPPoint>& P, Matrix& T)
     }
 }
 
-void PointOP::GetTransform(vector<Point> regpoint1, vector<Point> regpoint2,
+void PointOP::GetTransform(std::vector<Point> regpoint1, std::vector<Point> regpoint2,
     Matrix& transform)
 {
     // Get optimal tranformation of regpoint1 -> regpoint2
@@ -153,7 +151,7 @@ void PointOP::GetTransform(vector<Point> regpoint1, vector<Point> regpoint2,
     transform.Print();
 }
 
-void PointOP::GetTransform2(vector<Point>& regpoint1, vector<Point>& regpoint2,
+void PointOP::GetTransform2(std::vector<Point>& regpoint1, std::vector<Point>& regpoint2,
     Matrix& transform)
 {
     // Get optimal tranformation of regpoint1 -> regpoint2

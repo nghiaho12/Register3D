@@ -27,7 +27,7 @@ void ANN::Free()
     m_anything_to_free = false;
 }
 
-void ANN::SetPoints(vector<ICPPoint>& P)
+void ANN::SetPoints(std::vector<ICPPoint>& P)
 {
     Free(); // Free, if theres anything to free
 
@@ -53,7 +53,7 @@ void ANN::SetPoints(vector<ICPPoint>& P)
     m_anything_to_free = true;
 }
 
-void ANN::SetPoints(vector<Point>& P)
+void ANN::SetPoints(std::vector<Point>& P)
 {
     Free(); // Free, if theres anything to free
 

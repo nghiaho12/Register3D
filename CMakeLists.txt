@@ -66,8 +66,8 @@ add_library(lib
     src/Point.h
     src/PointOP.cc
     src/PointOP.h
-    src/PLYReader.cc
-    src/PLYReader.h
+    src/PointReader.cc
+    src/PointReader.h
     src/Sphere.h
     src/ZPR.cc
     src/ZPR.h

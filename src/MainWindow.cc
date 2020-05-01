@@ -5,7 +5,7 @@
 #include <wx/wfstream.h>
 #include <zlib.h>
 
-#include "PLYReader.h"
+#include "PointReader.h"
 
 extern _Global Global;
 
@@ -591,7 +591,7 @@ void MainWindow::ViewMerged(wxCommandEvent& event)
     Layout();
 }
 
-void MainWindow::SaveAs(vector<Point>& p, bool first, bool m_save_matrix)
+void MainWindow::SaveAs(std::vector<Point>& p, bool first, bool m_save_matrix)
 {
     wxString caption;
 
@@ -778,8 +778,8 @@ void MainWindow::SaveMatrix2(const wxString& dialog_path)
     m_status->AppendText(wxT("Transformation matrix saved to m_file: ") + full_path + wxT("\n"));
 }
 
-void MainWindow::FalseColourScan(vector<Point>& points,
-    vector<RGB>& false_colour)
+void MainWindow::FalseColourScan(std::vector<Point>& points,
+    std::vector<RGB>& false_colour)
 {
     false_colour.resize(points.size());
 
@@ -812,7 +812,7 @@ void MainWindow::SetGroundPlane(wxCommandEvent& event)
 {
     float a, b, c, d;
 
-    vector<Point>& cp = m_canvas2->GetControlPoints();
+    std::vector<Point>& cp = m_canvas2->GetControlPoints();
 
     // Re-order so that the control points are counter-clockwise, else the world
     // will flip upside down
