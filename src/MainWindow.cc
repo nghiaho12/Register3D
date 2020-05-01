@@ -271,7 +271,6 @@ bool MainWindow::OpenFile(bool first)
     }
 
     wxString wildcard("PLY|*.ply");
-
     wxFileDialog dialog(this, caption, "", "", wildcard, wxFD_OPEN | wxFD_CHANGE_DIR);
 
     if (dialog.ShowModal() == wxID_OK) {
@@ -281,22 +280,20 @@ bool MainWindow::OpenFile(bool first)
 
         wxFileName::SplitPath(dialog.GetPath(), &path, &name, &ext);
 
-        if (ext == "ply") {
-            if (first) {
-                LoadPLYPoints(dialog.GetPath().ToStdString(), m_params.point1);
-            } else {
-                LoadPLYPoints(dialog.GetPath().ToStdString(), m_params.point2);
-            }
-        }
-
         if (first) {
-            m_file1->SetLabel(dialog.GetPath());
+            m_filename1 = dialog.GetPath().ToStdString();
 
+            LoadPLYPoints(m_filename1, m_params.point1);
+
+            m_file1->SetLabel(dialog.GetPath());
             m_canvas1->LoadPoints(m_params.point1);
             m_canvas1->Enable();
         } else {
-            m_file2->SetLabel(dialog.GetPath());
+            m_filename2 = dialog.GetPath().ToStdString();
 
+            LoadPLYPoints(m_filename2, m_params.point2);
+
+            m_file2->SetLabel(dialog.GetPath());
             m_canvas2->LoadPoints(m_params.point2);
             m_canvas2->Enable();
         }

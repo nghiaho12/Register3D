@@ -59,6 +59,7 @@ private:
     bool m_init;
     int m_init_sash;
     Eigen::Matrix4d m_transform; // Final transformation
+    std::string m_filename1, m_filename2;
 
     DECLARE_EVENT_TABLE()
 };
