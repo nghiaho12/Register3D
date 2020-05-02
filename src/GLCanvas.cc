@@ -104,7 +104,7 @@ void GLCanvas::OnMouse(wxMouseEvent& event)
         }
         // CTRL + Left mouse button - Move reference point
         else if (event.GetButton() == wxMOUSE_BTN_LEFT && event.ControlDown()) {
-            MoveReferencePoint((int)event.GetX(), (int)event.GetY());
+            MoveOrigin((int)event.GetX(), (int)event.GetY());
         } /*
      else if(event.GetButton() == wxMOUSE_BTN_RIGHT) // Selected control point
      to move
@@ -389,7 +389,7 @@ void GLCanvas::RenderScene()
 
     // Axis
     Point P;
-    m_ZPR.GetReference(P.x, P.y, P.z);
+    m_ZPR.GetOrigin(P.x, P.y, P.z);
     DrawAxis(P);
 
     glFlush();
@@ -510,37 +510,17 @@ void GLCanvas::DrawControlPoints(Point& P)
 
     glColor3f(0.0, 1.0, 1.0);
 
-    if (m_selected_points.size() > 0)
-        if (&P == m_selected_points[0])
+    if (m_selected_points.size() > 0) {
+        if (&P == m_selected_points[0]) {
             glColor3f(1.0, 0.0, 0.0);
+        }
+    }
 
     glBegin(GL_POINTS);
     glVertex3f(P.x, P.y, P.z);
     glEnd();
 
     glPointSize(1.0);
-
-    /*
-          glColor3f(1.0, 0.0, 1.0);
-
-          if(m_selected_points.size() > 0)
-                  if(&P == m_selected_points[0])
-                          glColor3f(1.0, 0.0, 0.0);
-
-          glBegin(GL_LINES);
-                  glVertex3f(P.x - 0.4, P.y , P.z);
-                  glVertex3f(P.x + 0.4, P.y , P.z);
-          glEnd();
-
-          glBegin(GL_LINES);
-                  glVertex3f(P.x, P.y - 0.4 , P.z);
-                  glVertex3f(P.x, P.y + 0.4 , P.z);
-          glEnd();
-          glBegin(GL_LINES);
-                  glVertex3f(P.x, P.y, P.z - 0.4);
-                  glVertex3f(P.x, P.y , P.z + 0.4);
-          glEnd();
-  */
 }
 
 bool GLCanvas::AddControlPoints(int mousex, int mousey)
@@ -613,20 +593,25 @@ bool GLCanvas::AddControlPoints(int mousex, int mousey)
     return false;
 }
 
-void GLCanvas::MoveReferencePoint(int mousex, int mousey)
+void GLCanvas::MoveOrigin(int mousex, int mousey)
 {
     // Find which plane (x,y,z) the click was closest to
-    Point Ref;
-
-    m_ZPR.GetReference(Ref.x, Ref.y, Ref.z);
-
+    Point ref;
     float x, y, z;
 
     // Get current z buffer
-    OGLWrapper::Get3Dto2D(Ref.x, Ref.y, Ref.z, x, y, z);
-    OGLWrapper::Get2Dto3D(mousex, mousey, z, Ref.x, Ref.y, Ref.z);
+    OGLWrapper::Get2Dto3DwithoutZ(mousex, mousey, z, ref.x, ref.y, ref.z);
 
-    m_ZPR.SetReference(Ref.x, Ref.y, Ref.z);
+    if (z >= 1.0) {
+        // user clicked an empty space
+        // find the next best location
+        m_ZPR.GetOrigin(ref.x, ref.y, ref.z);
+
+        OGLWrapper::Get3Dto2D(ref.x, ref.y, ref.z, x, y, z);
+        OGLWrapper::Get2Dto3D(mousex, mousey, z, ref.x, ref.y, ref.z);
+    }
+
+    m_ZPR.SetOrigin(ref.x, ref.y, ref.z);
 }
 
 bool GLCanvas::SelectNearestControlPoint(int mousex, int mousey)
@@ -983,7 +968,7 @@ void GLCanvas::RenderMerged()
 
     // Axis
     Point P;
-    m_ZPR.GetReference(P.x, P.y, P.z);
+    m_ZPR.GetOrigin(P.x, P.y, P.z);
     DrawAxis(P);
 
     SwapBuffers();

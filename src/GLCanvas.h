@@ -51,7 +51,7 @@ private:
 
     // User interaction
     bool AddControlPoints(int mousex, int mousey);
-    void MoveReferencePoint(int mousex, int mousey);
+    void MoveOrigin(int mousex, int mousey);
     bool SelectNearestControlPoint(int mousex, int mousey);
 
 private:

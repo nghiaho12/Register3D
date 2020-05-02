@@ -17,8 +17,8 @@ public:
     void zprKeyboardUp(wxKeyEvent& event);
     void zprMouse(wxMouseEvent& event);
     void zprMotion(wxMouseEvent& event);
-    void GetReference(float& x, float& y, float& z);
-    void SetReference(float x, float y, float z);
+    void GetOrigin(float& x, float& y, float& z);
+    void SetOrigin(float x, float y, float z);
     void SetView(int view);
     void CenterReference();
     void ReleaseAllInput();

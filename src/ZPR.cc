@@ -427,14 +427,14 @@ void ZPR::ZprPick(GLdouble x, GLdouble y, GLdouble delX, GLdouble delY)
     glMatrixMode(GL_MODELVIEW);
 }
 
-void ZPR::GetReference(float& x, float& y, float& z)
+void ZPR::GetOrigin(float& x, float& y, float& z)
 {
     x = m_zpr_ref_point[0];
     y = m_zpr_ref_point[1];
     z = m_zpr_ref_point[2];
 }
 
-void ZPR::SetReference(float x, float y, float z)
+void ZPR::SetOrigin(float x, float y, float z)
 {
     m_zpr_ref_point[0] = x;
     m_zpr_ref_point[1] = y;
