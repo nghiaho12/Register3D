@@ -29,8 +29,8 @@ enum {
 
 BEGIN_EVENT_TABLE(MainWindow, wxFrame)
 EVT_SIZE(MainWindow::OnResize)
-EVT_MENU(OPEN_1, MainWindow::OpenFirstScan)
-EVT_MENU(OPEN_2, MainWindow::OpenSecondScan)
+EVT_MENU(OPEN_1, MainWindow::OpenFirstFile)
+EVT_MENU(OPEN_2, MainWindow::OpenSecondFile)
 EVT_MENU(SAVE_FIRST_MATRIX, MainWindow::SaveAsFirstAndMatrix)
 EVT_MENU(SAVE_MATRIX, MainWindow::SaveMatrix)
 EVT_MENU(wxID_EXIT, MainWindow::OnQuit)
@@ -125,14 +125,14 @@ MainWindow::MainWindow()
     m_GL_panel1 = new wxPanel(m_splitter_window_h, PANEL1);
     m_GL_panel2 = new wxPanel(m_splitter_window_h, PANEL2);
 
-    m_canvas1 = new GLCanvas(m_GL_panel1, CANVAS1, STITCH_MODE, m_params);
-    m_canvas2 = new GLCanvas(m_GL_panel2, CANVAS2, STITCH_MODE, m_params);
+    m_canvas[0] = new GLCanvas(m_GL_panel1, CANVAS1, STITCH_MODE, m_shared_data);
+    m_canvas[1] = new GLCanvas(m_GL_panel2, CANVAS2, STITCH_MODE, m_shared_data);
 
-    m_canvas1->Disable();
-    m_canvas2->Disable();
+    m_canvas[0]->Disable();
+    m_canvas[1]->Disable();
 
-    m_canvas1->SetIsFirstScan(true);
-    m_canvas2->SetIsFirstScan(false);
+    m_canvas[0]->SetIsFirstScan(true);
+    m_canvas[1]->SetIsFirstScan(false);
 
     wxBoxSizer* vbox1 = new wxBoxSizer(wxVERTICAL);
     wxBoxSizer* vbox2 = new wxBoxSizer(wxVERTICAL);
@@ -147,10 +147,10 @@ MainWindow::MainWindow()
     m_hbox2->Add(m_file2, 1, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL);
 
     vbox1->Add(m_hbox1, 0, wxEXPAND);
-    vbox1->Add(m_canvas1, 1, wxEXPAND);
+    vbox1->Add(m_canvas[0], 1, wxEXPAND);
 
     vbox2->Add(m_hbox2, 0, wxEXPAND);
-    vbox2->Add(m_canvas2, 1, wxEXPAND);
+    vbox2->Add(m_canvas[1], 1, wxEXPAND);
 
     m_GL_panel1->SetSizer(vbox1);
     m_GL_panel2->SetSizer(vbox2);
@@ -163,11 +163,11 @@ MainWindow::MainWindow()
 
     m_splitter_window_v->SplitHorizontally(m_splitter_window_h, m_status);
 
-    m_canvas1->SetwxTextCtrl(m_status);
-    m_canvas2->SetwxTextCtrl(m_status);
+    m_canvas[0]->SetwxTextCtrl(m_status);
+    m_canvas[1]->SetwxTextCtrl(m_status);
 
     // Setup the OpenGL canvas for merged scans
-    m_merged_scans = new GLCanvas(this, wxID_ANY, MERGED_MODE, m_params);
+    m_merged_scans = new GLCanvas(this, wxID_ANY, MERGED_MODE, m_shared_data);
     m_merged_scans->Hide();
     m_merged_scans->Disable();
     m_vbox->Add(m_merged_scans, 1, wxEXPAND);
@@ -190,51 +190,47 @@ MainWindow::MainWindow()
 
 void MainWindow::InitFalseColour()
 {
-    m_params.false_colour_r = new unsigned char[5 * 256];
-    m_params.false_colour_g = new unsigned char[5 * 256];
-    m_params.false_colour_b = new unsigned char[5 * 256];
+    m_shared_data.false_colour_r.resize(5 * 256);
+    m_shared_data.false_colour_g.resize(5 * 256);
+    m_shared_data.false_colour_b.resize(5 * 256);
 
     for (int i = 0; i < 255; i++) {
-        m_params.false_colour_r[i] = 255;
-        m_params.false_colour_g[i] = i;
-        m_params.false_colour_b[i] = 0;
+        m_shared_data.false_colour_r[i] = 255;
+        m_shared_data.false_colour_g[i] = i;
+        m_shared_data.false_colour_b[i] = 0;
     }
 
     for (int i = 255, c = 0; i < 255 * 2; i++, c++) {
-        m_params.false_colour_r[i] = 255 - c;
-        m_params.false_colour_g[i] = 255;
-        m_params.false_colour_b[i] = 0;
+        m_shared_data.false_colour_r[i] = 255 - c;
+        m_shared_data.false_colour_g[i] = 255;
+        m_shared_data.false_colour_b[i] = 0;
     }
 
     for (int i = 255 * 2, c = 0; i < 255 * 3; i++, c++) {
-        m_params.false_colour_r[i] = 0;
-        m_params.false_colour_g[i] = 255;
-        m_params.false_colour_b[i] = c;
+        m_shared_data.false_colour_r[i] = 0;
+        m_shared_data.false_colour_g[i] = 255;
+        m_shared_data.false_colour_b[i] = c;
     }
 
     for (int i = 255 * 3, c = 0; i < 255 * 4; i++, c++) {
-        m_params.false_colour_r[i] = 0;
-        m_params.false_colour_g[i] = 255 - c;
-        m_params.false_colour_b[i] = 255;
+        m_shared_data.false_colour_r[i] = 0;
+        m_shared_data.false_colour_g[i] = 255 - c;
+        m_shared_data.false_colour_b[i] = 255;
     }
 
     for (int i = 255 * 4, c = 0; i < 255 * 5; i++, c++) {
-        m_params.false_colour_r[i] = c;
-        m_params.false_colour_g[i] = 0;
-        m_params.false_colour_b[i] = 255;
+        m_shared_data.false_colour_r[i] = c;
+        m_shared_data.false_colour_g[i] = 0;
+        m_shared_data.false_colour_b[i] = 255;
     }
 
-    m_params.false_colour_min_z = -1.0;
-    m_params.false_colour_max_z = 10.0;
+    m_shared_data.false_colour_min_z = -1.0;
+    m_shared_data.false_colour_max_z = 10.0;
 }
 
 void MainWindow::OnQuit(wxCommandEvent& event)
 {
-    // using exit instead of Close()
-    // Close() will not fully close if theres unallocated widgets
-    // which happens. Should really fix this but this lazy way *works*.
-
-    exit(0);
+    Destroy();
 }
 
 void MainWindow::OnQuit2(wxCloseEvent& event) { exit(0); }
@@ -261,11 +257,11 @@ void MainWindow::OnResize(wxSizeEvent& event)
     }
 }
 
-bool MainWindow::OpenFile(bool first)
+bool MainWindow::OpenFile(int idx)
 {
     wxString caption;
 
-    if (first) {
+    if (idx == 0) {
         caption = "Open the first point cloud";
     } else {
         caption = "Open the second point cloud";
@@ -281,35 +277,37 @@ bool MainWindow::OpenFile(bool first)
 
         wxFileName::SplitPath(dialog.GetPath(), &path, &name, &ext);
 
-        if (first) {
-            m_filename1 = dialog.GetPath().ToStdString();
+        m_shared_data.filename[idx] = dialog.GetPath().ToStdString();
 
-            if (ReadPLYPoints(m_filename1, &m_params.point1, nullptr, nullptr)) {
-                m_file1->SetLabel(dialog.GetPath());
-                m_canvas1->LoadPoints(m_params.point1);
-                m_canvas1->Enable();
-            } else {
-                wxMessageDialog *dial = new wxMessageDialog(NULL, "Error opening: " + m_filename1, "Error", wxOK);
-                dial->ShowModal();
-                return false;
-            }
+        if (ReadPLYPoints(m_shared_data.filename[idx], &m_shared_data.point[idx], nullptr, nullptr)) {
+            m_file1->SetLabel(dialog.GetPath());
+            m_canvas[idx]->LoadPoints(m_shared_data.point[idx]);
+            m_canvas[idx]->Enable();
         } else {
-            m_filename2 = dialog.GetPath().ToStdString();
-
-            if (ReadPLYPoints(m_filename2, &m_params.point2, nullptr, nullptr)) {
-                m_file2->SetLabel(dialog.GetPath());
-                m_canvas2->LoadPoints(m_params.point2);
-                m_canvas2->Enable();
-            } else {
-                wxMessageDialog *dial = new wxMessageDialog(NULL, "Error opening: " + m_filename2, "Error", wxOK);
-                dial->ShowModal();
-                return false;
-            }
+            wxMessageDialog *dial = new wxMessageDialog(NULL, "Error opening: " + m_shared_data.filename[idx], "Error", wxOK);
+            dial->ShowModal();
+            return false;
         }
 
         Layout();
 
         EnableAllExceptStatus(true);
+
+        m_shared_data.table[idx].resize(m_shared_data.point[idx].size());
+
+        for (size_t i = 0; i < m_shared_data.point[idx].size(); i++) {
+            m_shared_data.table[idx][i] = i;
+        }
+
+        random_shuffle(m_shared_data.table[idx].begin(), m_shared_data.table[idx].end(), MyRandRange);
+
+        if (!m_shared_data.point[0].empty() && !m_shared_data.point[1].empty()) {
+            m_merged_scans->LoadPointsForFastview(m_shared_data.point[0], m_shared_data.point[1]);
+        }
+
+        FalseColourScan(m_shared_data.point[idx], m_shared_data.false_colour[idx]);
+
+        m_canvas[idx]->Draw();
 
         return true;
     }
@@ -317,95 +315,62 @@ bool MainWindow::OpenFile(bool first)
     return false;
 }
 
-void MainWindow::OpenFirstScan(wxCommandEvent& event)
+void MainWindow::OpenFirstFile(wxCommandEvent& event)
 {
-    if (OpenFile(true)) {
-        m_params.table1.resize(m_params.point1.size());
-
-        for (size_t i = 0; i < m_params.point1.size(); i++) {
-            m_params.table1[i] = i;
-        }
-
-        random_shuffle(m_params.table1.begin(), m_params.table1.end(), MyRandRange);
-
-        if (!m_params.point1.empty() && !m_params.point2.empty()) {
-            m_merged_scans->LoadPointsForFastview(m_params.point1, m_params.point2);
-        }
-
-        FalseColourScan(m_params.point1, m_params.false_colour1);
-
-        m_canvas1->Draw();
-    }
+    OpenFile(0);
 }
 
-void MainWindow::OpenSecondScan(wxCommandEvent& event)
+void MainWindow::OpenSecondFile(wxCommandEvent& event)
 {
-    if (OpenFile(false)) {
-        m_params.table2.resize(m_params.point2.size());
-
-        for (size_t i = 0; i < m_params.point2.size(); i++) {
-            m_params.table2[i] = i;
-        }
-
-        random_shuffle(m_params.table2.begin(), m_params.table2.end(), MyRandRange);
-
-        if (!m_params.point1.empty() && !m_params.point2.empty()) {
-            m_merged_scans->LoadPointsForFastview(m_params.point1, m_params.point2);
-        }
-
-        // Init the false colour
-        FalseColourScan(m_params.point2, m_params.false_colour2);
-
-        m_canvas2->Draw();
-    }
+    OpenFile(1);
 }
 
 void MainWindow::OnTimer(wxTimerEvent& event)
 {
-    if (!m_params.point1.empty() && !m_params.point2.empty()) {
+    if (!m_shared_data.point[0].empty() && !m_shared_data.point[1].empty()) {
         m_viewmerge_btn->Enable();
     } else {
         m_viewmerge_btn->Disable();
     }
 
-    if (m_canvas1->GetControlPoints().size() == 4 && m_canvas2->GetControlPoints().size() == 4) {
+    if (m_canvas[0]->GetControlPoints().size() == 4 && m_canvas[1]->GetControlPoints().size() == 4) {
         m_register_btn->Enable();
     } else {
         m_register_btn->Disable();
     }
 
     // User assisted spheres
-    if (m_canvas1->GetControlPoints().size() >= 2 && m_canvas2->GetControlPoints().size() == 1) {
-        m_canvas2->ClearSphere();
+    if (m_canvas[0]->GetControlPoints().size() >= 2 && m_canvas[1]->GetControlPoints().size() == 1) {
+        m_canvas[1]->ClearSphere();
 
-        float Radius = Math2::Magnitude(m_canvas1->GetControlPoints()[0],
-            m_canvas1->GetControlPoints()[1]);
+        float Radius = Math2::Magnitude(m_canvas[0]->GetControlPoints()[0],
+            m_canvas[0]->GetControlPoints()[1]);
 
-        Point& P = m_canvas2->GetControlPoints()[0];
+        Point& P = m_canvas[1]->GetControlPoints()[0];
 
-        m_canvas2->AddSphere(P.x, P.y, P.z, Radius);
-    } else if (m_canvas1->GetControlPoints().size() == 3 && m_canvas2->GetControlPoints().size() == 2) {
-        m_canvas2->ClearSphere();
+        m_canvas[1]->AddSphere(P.x, P.y, P.z, Radius);
+    } else if (m_canvas[0]->GetControlPoints().size() == 3 && m_canvas[1]->GetControlPoints().size() == 2) {
+        m_canvas[1]->ClearSphere();
 
-        float Radius = Math2::Magnitude(m_canvas1->GetControlPoints()[0],
-            m_canvas1->GetControlPoints()[2]);
+        float Radius = Math2::Magnitude(m_canvas[0]->GetControlPoints()[0],
+            m_canvas[0]->GetControlPoints()[2]);
 
-        Point& P1 = m_canvas2->GetControlPoints()[0];
+        Point& P1 = m_canvas[1]->GetControlPoints()[0];
 
-        m_canvas2->AddSphere(P1.x, P1.y, P1.z, Radius);
+        m_canvas[1]->AddSphere(P1.x, P1.y, P1.z, Radius);
 
-        Radius = Math2::Magnitude(m_canvas1->GetControlPoints()[1],
-            m_canvas1->GetControlPoints()[2]);
+        Radius = Math2::Magnitude(m_canvas[0]->GetControlPoints()[1],
+            m_canvas[0]->GetControlPoints()[2]);
 
-        Point& P2 = m_canvas2->GetControlPoints()[1];
+        Point& P2 = m_canvas[1]->GetControlPoints()[1];
 
-        m_canvas2->AddSphere(P2.x, P2.y, P2.z, Radius);
+        m_canvas[1]->AddSphere(P2.x, P2.y, P2.z, Radius);
     }
 }
 
 void MainWindow::StitchScans(wxCommandEvent& event)
 {
-    ICP icp(m_params);
+    ICP icp(m_shared_data);
     Eigen::Matrix4d initial_transform, icp_transform, tmp_matrix;
     ICPDialog* dialog = new ICPDialog(NULL);
 
@@ -414,8 +379,8 @@ void MainWindow::StitchScans(wxCommandEvent& event)
         return;
     }
 
-    m_canvas1->Disable();
-    m_canvas2->Disable();
+    m_canvas[0]->Disable();
+    m_canvas[1]->Disable();
 
     // Load identity matrix for T
     initial_transform.setIdentity();
@@ -423,8 +388,8 @@ void MainWindow::StitchScans(wxCommandEvent& event)
     m_transform.setIdentity();
 
     // Pre-registration
-    PointOP::GetTransform(m_canvas1->GetControlPoints(),
-        m_canvas2->GetControlPoints(), initial_transform);
+    PointOP::GetTransform(m_canvas[0]->GetControlPoints(),
+        m_canvas[1]->GetControlPoints(), initial_transform);
 
     m_status->AppendText("Initial transformation from the selected points\n");
 
@@ -438,7 +403,7 @@ void MainWindow::StitchScans(wxCommandEvent& event)
         m_status->AppendText("\n");
     }
 
-    PointOP::ApplyTransform(m_params.point1, initial_transform);
+    PointOP::ApplyTransform(m_shared_data.point[0], initial_transform);
 
     // Resize the m_status box, so the user can read it better
     int w, h;
@@ -457,7 +422,7 @@ void MainWindow::StitchScans(wxCommandEvent& event)
         icp.SetwxApp(m_app);
         icp.SetLTS(dialog->GetLTS());
         icp.SetMaxPoints(dialog->GetMaxPoints());
-        icp.SetPoints(m_params.point1, m_params.point2,
+        icp.SetPoints(m_shared_data.point[0], m_shared_data.point[1],
             dialog->GetInitialOutlierDist());
         icp.Seteps(dialog->Geteps());
 
@@ -513,9 +478,9 @@ void MainWindow::StitchScans(wxCommandEvent& event)
         }
     }
 
-    PointOP::ApplyTransform(m_params.point1, icp_transform);
+    PointOP::ApplyTransform(m_shared_data.point[0], icp_transform);
 
-    m_canvas1->LoadPoints(m_params.point1);
+    m_canvas[0]->LoadPoints(m_shared_data.point[0]);
 
     m_transform = icp_transform * initial_transform;
 
@@ -531,15 +496,15 @@ void MainWindow::StitchScans(wxCommandEvent& event)
         m_status->AppendText("\n");
     }
 
-    m_canvas1->GetControlPoints().clear();
-    m_canvas2->GetControlPoints().clear();
-    m_canvas1->ClearSphere();
-    m_canvas2->ClearSphere();
+    m_canvas[0]->GetControlPoints().clear();
+    m_canvas[1]->GetControlPoints().clear();
+    m_canvas[0]->ClearSphere();
+    m_canvas[1]->ClearSphere();
 
-    m_canvas1->Enable();
-    m_canvas2->Enable();
+    m_canvas[0]->Enable();
+    m_canvas[1]->Enable();
 
-    m_merged_scans->LoadPointsForFastview(m_params.point1, m_params.point2);
+    m_merged_scans->LoadPointsForFastview(m_shared_data.point[0], m_shared_data.point[1]);
 
     wxMessageDialog* d = new wxMessageDialog(this, "Registration complete!", "Complete",
         wxOK | wxICON_EXCLAMATION);
@@ -609,7 +574,7 @@ void MainWindow::SaveAs(bool save_matrix_only)
             SaveMatrixToFile(matrix_file);
 
             bool ok = ReadPLYPoints(
-                m_filename1,
+                m_shared_data.filename[0],
                 nullptr,
                 &output_file,
                 &m_transform);
@@ -668,8 +633,8 @@ void MainWindow::InitLayout()
 
 void MainWindow::EnableAllExceptStatus(bool enable)
 {
-    m_canvas1->Enable(enable);
-    m_canvas2->Enable(enable);
+    m_canvas[0]->Enable(enable);
+    m_canvas[1]->Enable(enable);
     m_menubar->Enable(enable);
     m_splitter_window_h->Enable(enable);
 }
@@ -729,20 +694,20 @@ void MainWindow::FalseColourScan(std::vector<Point>& points,
     for (size_t i = 0; i < points.size(); i++) {
         int r, g, b;
 
-        if (points[i].z < m_params.false_colour_min_z) {
-            r = m_params.false_colour_r[0];
-            g = m_params.false_colour_g[0];
-            b = m_params.false_colour_b[0];
-        } else if (points[i].z > m_params.false_colour_max_z) {
-            r = m_params.false_colour_r[256 * 5 - 1];
-            g = m_params.false_colour_g[256 * 5 - 1];
-            b = m_params.false_colour_b[256 * 5 - 1];
+        if (points[i].z < m_shared_data.false_colour_min_z) {
+            r = m_shared_data.false_colour_r[0];
+            g = m_shared_data.false_colour_g[0];
+            b = m_shared_data.false_colour_b[0];
+        } else if (points[i].z > m_shared_data.false_colour_max_z) {
+            r = m_shared_data.false_colour_r[256 * 5 - 1];
+            g = m_shared_data.false_colour_g[256 * 5 - 1];
+            b = m_shared_data.false_colour_b[256 * 5 - 1];
         } else {
-            int idx = (points[i].z - m_params.false_colour_min_z) / (m_params.false_colour_max_z - m_params.false_colour_min_z) * 256 * 5;
+            int idx = (points[i].z - m_shared_data.false_colour_min_z) / (m_shared_data.false_colour_max_z - m_shared_data.false_colour_min_z) * 256 * 5;
 
-            r = m_params.false_colour_r[idx];
-            g = m_params.false_colour_g[idx];
-            b = m_params.false_colour_b[idx];
+            r = m_shared_data.false_colour_r[idx];
+            g = m_shared_data.false_colour_g[idx];
+            b = m_shared_data.false_colour_b[idx];
         }
 
         false_colour[i].r = r;

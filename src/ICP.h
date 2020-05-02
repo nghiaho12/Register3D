@@ -14,7 +14,7 @@ The main TrICP algorithm class. Designed to iteract with the GUI.
 
 class ICP {
 public:
-    ICP(Params &params);
+    ICP(SharedData &params);
 
     void SetLTS(float a);
     void SetPoints(std::vector<Point>& P1, std::vector<Point>& P2, float dist_threshold);
@@ -32,7 +32,7 @@ private:
     bool ByDistSq(const ICPPoint& a, const ICPPoint& b);
 
 private:
-    Params m_params;
+    SharedData &m_shared_data;
 
     std::vector<ICPPoint> m_points1;
     std::vector<Point> m_points2;

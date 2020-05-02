@@ -10,8 +10,8 @@
 #include "Point.h"
 #include "PointOP.h"
 
-ICP::ICP(Params &params) :
-    m_params(params)
+ICP::ICP(SharedData &shared_data) :
+    m_shared_data(shared_data)
 {
     m_LTS = 1.0;
     m_text = NULL;
@@ -250,8 +250,8 @@ void ICP::SetPoints(std::vector<Point>& P1, std::vector<Point>& P2,
     std::vector<Point> filtered1, filtered2;
     Point start, end;
 
-    reverseable_shuffle_forward(P1, m_params.table1);
-    reverseable_shuffle_forward(P2, m_params.table2);
+    reverseable_shuffle_forward(P1, m_shared_data.table[0]);
+    reverseable_shuffle_forward(P2, m_shared_data.table[1]);
 
     auto update_text = [&]() {
         while (m_app->Pending()) {
@@ -383,8 +383,8 @@ void ICP::SetPoints(std::vector<Point>& P1, std::vector<Point>& P2,
 
     m_ANN_points2.SetPoints(m_points2);
 
-    reverseable_shuffle_backward(P1, m_params.table1);
-    reverseable_shuffle_backward(P2, m_params.table2);
+    reverseable_shuffle_backward(P1, m_shared_data.table[0]);
+    reverseable_shuffle_backward(P2, m_shared_data.table[1]);
 }
 
 void ICP::Seteps(float e)

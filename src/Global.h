@@ -12,13 +12,13 @@ struct RGB {
     unsigned char r, g, b;
 };
 
-struct Params {
-    std::vector<Point> point1, point2;
-    std::vector<size_t> table1, table2; // Allows a reverseable version of random_shuffle()
+struct SharedData {
+    std::string filename[2];
+    std::vector<Point> point[2];
+    std::vector<size_t> table[2]; // Allows a reverseable version of random_shuffle()
+    std::vector<RGB> false_colour[2]; // False colour palette
 
-    // False colour palette
-    std::vector<RGB> false_colour1, false_colour2; // for scan1, scan2
-    unsigned char *false_colour_r, *false_colour_g, *false_colour_b;
+    std::vector<uint8_t> false_colour_r, false_colour_g, false_colour_b;
     float false_colour_min_z, false_colour_max_z;
 };
 
