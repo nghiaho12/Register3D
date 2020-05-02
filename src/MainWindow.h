@@ -45,15 +45,14 @@ private:
     wxMenuBar* m_menubar;
     wxMenu *m_file, *m_help;
     wxMenuItem *m_save_first_point_cloud_and_matrix, *m_save_matrix;
-    wxBoxSizer* m_vbox;
-    wxPanel *m_GL_panel1, *m_GL_panel2;
-    wxBoxSizer *m_hbox1, *m_hbox2;
     wxSplitterWindow *m_splitter_window_h, *m_splitter_window_v;
-    wxStaticText *m_file1, *m_file2;
     wxTextCtrl* m_status;
     wxButton *m_register_btn, *m_viewmerge_btn, *m_ground_btn;
     wxTimer* m_timer;
-    GLCanvas *m_canvas[2], *m_merged_scans;
+    wxPanel *m_GL_panel[2];
+    GLCanvas *m_canvas[2];
+    wxStaticText *m_file_txt[2];
+    GLCanvas *m_merged_scans;
     wxApp* m_app;
 
     bool m_init;

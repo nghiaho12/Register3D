@@ -96,25 +96,24 @@ MainWindow::MainWindow()
 
     wxToolBar* toolBar = new wxToolBar(this, wxID_ANY);
 
-    m_register_btn = new wxButton(toolBar, REGISTER_SCANS, "Register scans");
+    m_register_btn = new wxButton(toolBar, REGISTER_SCANS, "Register");
     toolBar->AddControl(m_register_btn);
 
-    m_viewmerge_btn = new wxButton(toolBar, VIEW_REGISTERED, "View registered scans");
+    m_viewmerge_btn = new wxButton(toolBar, VIEW_REGISTERED, "Toggle view");
     toolBar->AddControl(m_viewmerge_btn);
 
     toolBar->Realize();
     SetToolBar(toolBar);
 
     // Setup the horizontal box
-
-    m_vbox = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer *vbox = new wxBoxSizer(wxVERTICAL);
 
     // Setup the vertical split window
     m_splitter_window_v = new wxSplitterWindow(this, wxID_ANY);
     m_splitter_window_v->SetSashGravity(0.5);
     m_splitter_window_v->SetMinimumPaneSize(1);
 
-    m_vbox->Add(m_splitter_window_v, 1, wxEXPAND);
+    vbox->Add(m_splitter_window_v, 1, wxEXPAND);
 
     // Setup the OpenGL split window
     m_splitter_window_h = new wxSplitterWindow(m_splitter_window_v, SPLITTER_H);
@@ -122,11 +121,11 @@ MainWindow::MainWindow()
     m_splitter_window_h->SetMinimumPaneSize(1);
 
     // Setup the OpenGL canvas and add to the horizontal box
-    m_GL_panel1 = new wxPanel(m_splitter_window_h, PANEL1);
-    m_GL_panel2 = new wxPanel(m_splitter_window_h, PANEL2);
+    m_GL_panel[0] = new wxPanel(m_splitter_window_h, PANEL1);
+    m_GL_panel[1] = new wxPanel(m_splitter_window_h, PANEL2);
 
-    m_canvas[0] = new GLCanvas(m_GL_panel1, CANVAS1, STITCH_MODE, m_shared_data);
-    m_canvas[1] = new GLCanvas(m_GL_panel2, CANVAS2, STITCH_MODE, m_shared_data);
+    m_canvas[0] = new GLCanvas(m_GL_panel[0], CANVAS1, STITCH_MODE, m_shared_data);
+    m_canvas[1] = new GLCanvas(m_GL_panel[1], CANVAS2, STITCH_MODE, m_shared_data);
 
     m_canvas[0]->Disable();
     m_canvas[1]->Disable();
@@ -134,28 +133,27 @@ MainWindow::MainWindow()
     m_canvas[0]->SetIsFirstScan(true);
     m_canvas[1]->SetIsFirstScan(false);
 
-    wxBoxSizer* vbox1 = new wxBoxSizer(wxVERTICAL);
-    wxBoxSizer* vbox2 = new wxBoxSizer(wxVERTICAL);
+    auto *vbox1 = new wxBoxSizer(wxVERTICAL);
+    auto *vbox2 = new wxBoxSizer(wxVERTICAL);
+    auto *hbox1 = new wxBoxSizer(wxHORIZONTAL);
+    auto *hbox2 = new wxBoxSizer(wxHORIZONTAL);
 
-    m_hbox1 = new wxBoxSizer(wxHORIZONTAL);
-    m_hbox2 = new wxBoxSizer(wxHORIZONTAL);
+    m_file_txt[0] = new wxStaticText(m_GL_panel[0], wxID_ANY, "First point cloud");
+    m_file_txt[1] = new wxStaticText(m_GL_panel[1], wxID_ANY, "Second point cloud");
 
-    m_file1 = new wxStaticText(m_GL_panel1, wxID_ANY, "First point cloud");
-    m_file2 = new wxStaticText(m_GL_panel2, wxID_ANY, "Second point cloud");
+    hbox1->Add(m_file_txt[0], 1, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL);
+    hbox2->Add(m_file_txt[1], 1, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL);
 
-    m_hbox1->Add(m_file1, 1, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL);
-    m_hbox2->Add(m_file2, 1, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL);
-
-    vbox1->Add(m_hbox1, 0, wxEXPAND);
+    vbox1->Add(hbox1, 0, wxEXPAND);
     vbox1->Add(m_canvas[0], 1, wxEXPAND);
 
-    vbox2->Add(m_hbox2, 0, wxEXPAND);
+    vbox2->Add(hbox2, 0, wxEXPAND);
     vbox2->Add(m_canvas[1], 1, wxEXPAND);
 
-    m_GL_panel1->SetSizer(vbox1);
-    m_GL_panel2->SetSizer(vbox2);
+    m_GL_panel[0]->SetSizer(vbox1);
+    m_GL_panel[1]->SetSizer(vbox2);
 
-    m_splitter_window_h->SplitVertically(m_GL_panel1, m_GL_panel2);
+    m_splitter_window_h->SplitVertically(m_GL_panel[0], m_GL_panel[1]);
 
     // Status box
     m_status = new wxTextCtrl(m_splitter_window_v, wxID_ANY, "", wxDefaultPosition,
@@ -170,8 +168,8 @@ MainWindow::MainWindow()
     m_merged_scans = new GLCanvas(this, wxID_ANY, MERGED_MODE, m_shared_data);
     m_merged_scans->Hide();
     m_merged_scans->Disable();
-    m_vbox->Add(m_merged_scans, 1, wxEXPAND);
-    this->SetSizer(m_vbox);
+    vbox->Add(m_merged_scans, 1, wxEXPAND);
+    this->SetSizer(vbox);
 
     m_timer = new wxTimer(this, TIMER_ID);
     m_timer->Start(100);
@@ -240,8 +238,9 @@ void MainWindow::OnResize(wxSizeEvent& event)
     // This is required in Windows, else it will crash on startup becuase the main
     // window has not been created
 
-    if (!m_init)
+    if (!m_init) {
         return;
+    }
 
     // This is an UGLY hack to set the vertical sash position
     // The sash position has to be set after the entire window is created and
@@ -280,7 +279,7 @@ bool MainWindow::OpenFile(int idx)
         m_shared_data.filename[idx] = dialog.GetPath().ToStdString();
 
         if (ReadPLYPoints(m_shared_data.filename[idx], &m_shared_data.point[idx], nullptr, nullptr)) {
-            m_file1->SetLabel(dialog.GetPath());
+            m_file_txt[idx]->SetLabel(dialog.GetPath());
             m_canvas[idx]->LoadPoints(m_shared_data.point[idx]);
             m_canvas[idx]->Enable();
         } else {
@@ -343,28 +342,28 @@ void MainWindow::OnTimer(wxTimerEvent& event)
     if (m_canvas[0]->GetControlPoints().size() >= 2 && m_canvas[1]->GetControlPoints().size() == 1) {
         m_canvas[1]->ClearSphere();
 
-        float Radius = Math2::Magnitude(m_canvas[0]->GetControlPoints()[0],
+        float radius = Math2::Magnitude(m_canvas[0]->GetControlPoints()[0],
             m_canvas[0]->GetControlPoints()[1]);
 
         Point& P = m_canvas[1]->GetControlPoints()[0];
 
-        m_canvas[1]->AddSphere(P.x, P.y, P.z, Radius);
+        m_canvas[1]->AddSphere(P.x, P.y, P.z, radius);
     } else if (m_canvas[0]->GetControlPoints().size() == 3 && m_canvas[1]->GetControlPoints().size() == 2) {
         m_canvas[1]->ClearSphere();
 
-        float Radius = Math2::Magnitude(m_canvas[0]->GetControlPoints()[0],
+        float radius = Math2::Magnitude(m_canvas[0]->GetControlPoints()[0],
             m_canvas[0]->GetControlPoints()[2]);
 
         Point& P1 = m_canvas[1]->GetControlPoints()[0];
 
-        m_canvas[1]->AddSphere(P1.x, P1.y, P1.z, Radius);
+        m_canvas[1]->AddSphere(P1.x, P1.y, P1.z, radius);
 
-        Radius = Math2::Magnitude(m_canvas[0]->GetControlPoints()[1],
+        radius = Math2::Magnitude(m_canvas[0]->GetControlPoints()[1],
             m_canvas[0]->GetControlPoints()[2]);
 
         Point& P2 = m_canvas[1]->GetControlPoints()[1];
 
-        m_canvas[1]->AddSphere(P2.x, P2.y, P2.z, Radius);
+        m_canvas[1]->AddSphere(P2.x, P2.y, P2.z, radius);
     }
 }
 
@@ -413,8 +412,9 @@ void MainWindow::StitchScans(wxCommandEvent& event)
 
     Refresh();
 
-    while (m_app->Pending())
+    while (m_app->Pending()) {
         m_app->Dispatch();
+    }
 
     if (dialog->UseICP()) {
         // Iterative Closest Point Algorithm
@@ -589,7 +589,7 @@ void MainWindow::SaveAs(bool save_matrix_only)
 
         m_status->AppendText("done\n");
 
-        m_file1->SetLabel(filename);
+        m_file_txt[0]->SetLabel(filename);
 	}
 }
 
