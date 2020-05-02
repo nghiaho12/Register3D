@@ -3,13 +3,22 @@
 #include <sstream>
 #include <iostream>
 
-bool LoadPLYPoints(const std::string& file, std::vector<Point>& points)
+bool ReadPLYPoints(
+    const std::string& file,
+    std::vector<Point>* points,
+    const std::string* output_file,
+    const Eigen::Matrix4d* transform)
 {
     std::ifstream input(file);
+    std::ofstream output;
 
     if (!input) {
         std::cerr << "can't read: " << file << "\n";
         return false;
+    }
+
+    if (output_file) {
+        output.open(*output_file);
     }
 
     char line[1024];
@@ -20,6 +29,10 @@ bool LoadPLYPoints(const std::string& file, std::vector<Point>& points)
     if (std::string(line) != "ply") {
         std::cerr << "missing ply header" << "\n";
         return false;
+    }
+
+    if (output) {
+        output << line << "\n";
     }
 
     int x_offset = -1, x_index = -1;
@@ -41,6 +54,10 @@ bool LoadPLYPoints(const std::string& file, std::vector<Point>& points)
 
         if (input.eof()) {
             break;
+        }
+
+        if (output) {
+            output << line << "\n";
         }
 
         std::string s(line);
@@ -170,12 +187,14 @@ bool LoadPLYPoints(const std::string& file, std::vector<Point>& points)
         }
     }
 
-    points.resize(num_vertex);
+    if (points) {
+        points->resize(num_vertex);
+    }
 
     std::vector<char> bytes(property_bytes);
 
     for (int i=0; i < num_vertex; i++) {
-        auto &p = points[i];
+        Point p;
 
         // default color
         p.r = 255;
@@ -188,6 +207,23 @@ bool LoadPLYPoints(const std::string& file, std::vector<Point>& points)
             float *x = reinterpret_cast<float*>(&bytes[x_offset]);
             float *y = reinterpret_cast<float*>(&bytes[y_offset]);
             float *z = reinterpret_cast<float*>(&bytes[z_offset]);
+
+            if (output && transform) {
+                Eigen::Vector4d X;
+
+                X(0) = *x;
+                X(1) = *y;
+                X(2) = *z;
+                X(3) = 1.0;
+
+                X = (*transform) * X;
+
+                *x = X(0);
+                *y = X(1);
+                *z = X(2);
+
+                output.write(bytes.data(), bytes.size());
+            }
 
             p.x = *x;
             p.y = *y;
@@ -261,6 +297,59 @@ bool LoadPLYPoints(const std::string& file, std::vector<Point>& points)
                     }
                 }
             }
+
+            if (output && transform) {
+                Eigen::Vector4d X;
+
+                X(0) = p.x;
+                X(1) = p.y;
+                X(2) = p.z;
+                X(3) = 1.0;
+
+                X = (*transform) * X;
+
+                std::stringstream ss(line);
+
+                for (int k=0; ;k++) {
+                    float v1 = std::numeric_limits<float>::max();
+                    int v2 = std::numeric_limits<int>::max();
+
+                    if (!(ss >> v1)) {
+                        if (!(ss >> v2)) {
+                            break;;
+                        }
+                    }
+
+                    if (k == x_index) {
+                        output << p.x << " ";
+                    } else if (k == y_index) {
+                        output << p.y << " ";
+                    } else if (k == z_index) {
+                        output << p.z << " ";
+                    } else if (v1 != std::numeric_limits<float>::max()) {
+                        output << v1 << " ";
+                    } else {
+                        output << v2 << " ";
+                    }
+                }
+
+                output << "\n";
+            }
+        }
+
+        if (points) {
+            points->operator[](i) = p;
+        }
+    }
+
+    if (output) {
+        // remaining part of the file
+        std::vector<char> buf(1024);
+
+        while (!input.eof()) {
+            input.read(buf.data(), buf.size());
+            std::streamsize bytes = input.gcount();
+            output.write(buf.data(), bytes);
         }
     }
 

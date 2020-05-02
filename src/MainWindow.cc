@@ -283,7 +283,7 @@ bool MainWindow::OpenFile(bool first)
         if (first) {
             m_filename1 = dialog.GetPath().ToStdString();
 
-            LoadPLYPoints(m_filename1, m_params.point1);
+            ReadPLYPoints(m_filename1, &m_params.point1, nullptr, nullptr);
 
             m_file1->SetLabel(dialog.GetPath());
             m_canvas1->LoadPoints(m_params.point1);
@@ -291,7 +291,7 @@ bool MainWindow::OpenFile(bool first)
         } else {
             m_filename2 = dialog.GetPath().ToStdString();
 
-            LoadPLYPoints(m_filename2, m_params.point2);
+            ReadPLYPoints(m_filename2, &m_params.point2, nullptr, nullptr);
 
             m_file2->SetLabel(dialog.GetPath());
             m_canvas2->LoadPoints(m_params.point2);
@@ -566,23 +566,67 @@ void MainWindow::ViewMerged(wxCommandEvent& event)
     Layout();
 }
 
-void MainWindow::SaveAs(std::vector<Point>& p, bool first, bool m_save_matrix)
+void MainWindow::SaveAs(bool save_matrix_only)
 {
+    wxString caption = "Save point cloud and matrix";
+    wxString wildcard = "PLY|*.ply";
+
+    if (save_matrix_only) {
+        caption = "Save matrix";
+        wildcard = "Matrix|*.matrix";
+    }
+
+    wxFileDialog dialog(this, caption, "", "", wildcard, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+
+	if (dialog.ShowModal() == wxID_OK) {
+	    wxString filename, path, name, ext;
+
+	    wxFileName::SplitPath(dialog.GetPath(), &path, &name, &ext);
+
+        filename = dialog.GetPath();
+
+        if (save_matrix_only) {
+            if (ext != ".matrix") {
+                filename += ".matrix";
+            }
+
+            SaveMatrixToFile(filename);
+
+            m_status->AppendText("Saving matrix to " + filename);
+        } else {
+            std::string output_file = filename.ToStdString() + ".ply";
+            std::string matrix_file = filename.ToStdString() + ".matrix";
+
+            SaveMatrixToFile(matrix_file);
+
+            bool ok = ReadPLYPoints(
+                m_filename1,
+                nullptr,
+                &output_file,
+                &m_transform);
+
+            if (!ok) {
+                wxMessageDialog *dial = new wxMessageDialog(NULL, "Error writing to: " + dialog.GetPath(), "Error", wxOK);
+                dial->ShowModal();
+
+                return;
+            }
+        }
+
+        m_status->AppendText("done\n");
+
+        m_file1->SetLabel(filename);
+	}
 }
 
 void MainWindow::SaveAsFirstAndMatrix(wxCommandEvent& event)
 {
-    SaveAs(m_params.point1, true, true);
+    SaveAs(false);
 }
 
 void MainWindow::SaveAsFirst(wxCommandEvent& event)
 {
-    SaveAs(m_params.point1, true, false);
-}
-
-void MainWindow::SaveAsSecond(wxCommandEvent& event)
-{
-    SaveAs(m_params.point2, false, false);
+    SaveAs(true);
 }
 
 void MainWindow::SetApp(wxApp* a) { m_app = a; }

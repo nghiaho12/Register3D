@@ -32,7 +32,7 @@ private:
     void SaveAs(std::vector<Point>& p, bool first, bool m_save_matrix);
     void SaveAsFirstAndMatrix(wxCommandEvent& event);
     void SaveAsFirst(wxCommandEvent& event);
-    void SaveAsSecond(wxCommandEvent& event);
+    void SaveAs(bool save_matrix_only);
     void SaveMatrix(wxCommandEvent& event);
     void SaveMatrixToFile(const wxString& dialog_path);
     void Help(wxCommandEvent& event);
