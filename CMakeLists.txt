@@ -70,6 +70,7 @@ add_library(lib
     src/Sphere.h
     src/ZPR.cc
     src/ZPR.h
+    src/icon.h
 )
 
 target_include_directories(lib PRIVATE src/ann_1.1.2/include)

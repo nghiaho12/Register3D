@@ -7,6 +7,7 @@
 #include "MainWindow.h"
 #include "Misc.h"
 #include "PointReader.h"
+#include "icon.h"
 
 enum {
     OPEN_1 = wxID_HIGHEST + 1,
@@ -179,8 +180,8 @@ MainWindow::MainWindow()
     m_save_matrix->Enable(false);
 
     // icon
-    //wxIcon icon(m_params.pwd + wxT("/icon.ico"), wxBITMAP_TYPE_ICO);
-    //SetIcon(icon);
+    wxIcon icon(icon_xpm);
+    SetIcon(icon);
 
     InitFalseColour();
 
@@ -283,19 +284,27 @@ bool MainWindow::OpenFile(bool first)
         if (first) {
             m_filename1 = dialog.GetPath().ToStdString();
 
-            ReadPLYPoints(m_filename1, &m_params.point1, nullptr, nullptr);
-
-            m_file1->SetLabel(dialog.GetPath());
-            m_canvas1->LoadPoints(m_params.point1);
-            m_canvas1->Enable();
+            if (ReadPLYPoints(m_filename1, &m_params.point1, nullptr, nullptr)) {
+                m_file1->SetLabel(dialog.GetPath());
+                m_canvas1->LoadPoints(m_params.point1);
+                m_canvas1->Enable();
+            } else {
+                wxMessageDialog *dial = new wxMessageDialog(NULL, "Error opening: " + m_filename1, "Error", wxOK);
+                dial->ShowModal();
+                return false;
+            }
         } else {
             m_filename2 = dialog.GetPath().ToStdString();
 
-            ReadPLYPoints(m_filename2, &m_params.point2, nullptr, nullptr);
-
-            m_file2->SetLabel(dialog.GetPath());
-            m_canvas2->LoadPoints(m_params.point2);
-            m_canvas2->Enable();
+            if (ReadPLYPoints(m_filename2, &m_params.point2, nullptr, nullptr)) {
+                m_file2->SetLabel(dialog.GetPath());
+                m_canvas2->LoadPoints(m_params.point2);
+                m_canvas2->Enable();
+            } else {
+                wxMessageDialog *dial = new wxMessageDialog(NULL, "Error opening: " + m_filename2, "Error", wxOK);
+                dial->ShowModal();
+                return false;
+            }
         }
 
         Layout();
