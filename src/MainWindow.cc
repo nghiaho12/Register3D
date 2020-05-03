@@ -39,7 +39,6 @@ EVT_MENU(wxID_ABOUT, MainWindow::AboutClick)
 EVT_BUTTON(REGISTER_SCANS, MainWindow::StitchScans)
 EVT_BUTTON(VIEW_REGISTERED, MainWindow::ViewMerged)
 EVT_TIMER(TIMER_ID, MainWindow::OnTimer)
-EVT_CLOSE(MainWindow::OnQuit2)
 END_EVENT_TABLE()
 
 MainWindow::MainWindow()
@@ -165,10 +164,10 @@ MainWindow::MainWindow()
     m_canvas[1]->SetwxTextCtrl(m_status);
 
     // Setup the OpenGL canvas for merged scans
-    m_merged_scans = new GLCanvas(this, wxID_ANY, MERGED_MODE, m_shared_data);
-    m_merged_scans->Hide();
-    m_merged_scans->Disable();
-    vbox->Add(m_merged_scans, 1, wxEXPAND);
+    m_merged_view = new GLCanvas(this, wxID_ANY, MERGED_MODE, m_shared_data);
+    m_merged_view->Hide();
+    m_merged_view->Disable();
+    vbox->Add(m_merged_view, 1, wxEXPAND);
     this->SetSizer(vbox);
 
     m_timer = new wxTimer(this, TIMER_ID);
@@ -231,8 +230,6 @@ void MainWindow::OnQuit(wxCommandEvent& event)
     Destroy();
 }
 
-void MainWindow::OnQuit2(wxCloseEvent& event) { exit(0); }
-
 void MainWindow::OnResize(wxSizeEvent& event)
 {
     // This is required in Windows, else it will crash on startup becuase the main
@@ -242,18 +239,8 @@ void MainWindow::OnResize(wxSizeEvent& event)
         return;
     }
 
-    // This is an UGLY hack to set the vertical sash position
-    // The sash position has to be set after the entire window is created and
-    // fully resized But I can't seem to find any approporiate event to place this
-    // function in
-
     Layout();
-
-    if (m_init_sash < 1) {
-        InitLayout();
-
-        m_init_sash++;
-    }
+    InitCustomLayout();
 }
 
 bool MainWindow::OpenFile(int idx)
@@ -301,7 +288,7 @@ bool MainWindow::OpenFile(int idx)
         random_shuffle(m_shared_data.table[idx].begin(), m_shared_data.table[idx].end(), MyRandRange);
 
         if (!m_shared_data.point[0].empty() && !m_shared_data.point[1].empty()) {
-            m_merged_scans->LoadPointsForFastview(m_shared_data.point[0], m_shared_data.point[1]);
+            m_merged_view->LoadPointsForFastview(m_shared_data.point[0], m_shared_data.point[1]);
         }
 
         FalseColourScan(m_shared_data.point[idx], m_shared_data.false_colour[idx]);
@@ -504,7 +491,7 @@ void MainWindow::StitchScans(wxCommandEvent& event)
     m_canvas[0]->Enable();
     m_canvas[1]->Enable();
 
-    m_merged_scans->LoadPointsForFastview(m_shared_data.point[0], m_shared_data.point[1]);
+    m_merged_view->LoadPointsForFastview(m_shared_data.point[0], m_shared_data.point[1]);
 
     wxMessageDialog* d = new wxMessageDialog(this, "Registration complete!", "Complete",
         wxOK | wxICON_EXCLAMATION);
@@ -518,20 +505,20 @@ void MainWindow::StitchScans(wxCommandEvent& event)
 
 void MainWindow::ViewMerged(wxCommandEvent& event)
 {
-    if (!m_merged_scans->IsShown()) {
+    if (!m_merged_view->IsShown()) {
         int w, h;
 
         GetClientSize(&w, &h);
 
-        m_merged_scans->Enable();
-        m_merged_scans->Show();
-        m_merged_scans->SetSize(w, h);
+        m_merged_view->Enable();
+        m_merged_view->Show();
+        m_merged_view->SetSize(w, h);
 
         m_splitter_window_v->Disable();
         m_splitter_window_v->Hide();
     } else {
-        m_merged_scans->Disable();
-        m_merged_scans->Hide();
+        m_merged_view->Disable();
+        m_merged_view->Hide();
 
         m_splitter_window_v->Enable();
         m_splitter_window_v->Show();
@@ -620,7 +607,7 @@ void MainWindow::AboutClick(wxCommandEvent& event)
     about->ShowModal();
 }
 
-void MainWindow::InitLayout()
+void MainWindow::InitCustomLayout()
 {
     int w, h;
 
@@ -628,7 +615,7 @@ void MainWindow::InitLayout()
 
     GetClientSize(&w, &h);
 
-    m_splitter_window_v->SetSashPosition(h * 9 / 10, true);
+    m_splitter_window_v->SetSashPosition(h * 8 / 10, true);
 }
 
 void MainWindow::EnableAllExceptStatus(bool enable)

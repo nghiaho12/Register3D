@@ -13,7 +13,7 @@ class MainWindow : public wxFrame {
 public:
     MainWindow();
     void SetApp(wxApp* a);
-    void InitLayout();
+    void InitCustomLayout();
 
 private:
     void InitFalseColour();
@@ -52,7 +52,7 @@ private:
     wxPanel *m_GL_panel[2];
     GLCanvas *m_canvas[2];
     wxStaticText *m_file_txt[2];
-    GLCanvas *m_merged_scans;
+    GLCanvas *m_merged_view;
     wxApp* m_app;
 
     bool m_init;
