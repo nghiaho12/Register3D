@@ -8,6 +8,10 @@ find_package(Eigen3 3 REQUIRED NO_MODULE)
 
 include(${wxWidgets_USE_FILE})
 
+set(PRE_CONFIGURE_FILE "src/git.h.in")
+set(POST_CONFIGURE_FILE "src/git.h")
+include(src/git_watcher.cmake)
+
 add_library(libANN
     src/ann_1.1.2/src/ANN.cpp
     src/ann_1.1.2/src/bd_fix_rad_search.cpp
@@ -39,6 +43,7 @@ target_include_directories(libANN PRIVATE src/ann_1.1.2/include)
 add_library(lib
     src/About.cc
     src/About.h
+    src/AboutPNG.h
     src/Cylinder.cc
     src/Cylinder.h
     src/GLCanvas.cc

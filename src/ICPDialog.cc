@@ -30,14 +30,13 @@ ICPDialog::ICPDialog(wxWindow* parent)
 
     table->Add(
         new wxStaticText(m_pane, wxID_ANY,
-            "Maximum points per scan\n(WARNING: 1 million "
-                "points uses about 200MB of memory):"),
+            "Maximum points for ICP:"),
         0, wxALIGN_CENTER_VERTICAL);
     m_entry1 = new wxTextCtrl(m_pane, wxID_ANY);
     table->Add(m_entry1, 0, wxALIGN_TOP);
 
     table->Add(new wxStaticText(m_pane, wxID_ANY,
-                   "Initial outlier distance (metres):"),
+                   "Initial outlier distance:"),
         0, wxALIGN_CENTER_VERTICAL);
     m_entry2 = new wxTextCtrl(m_pane, wxID_ANY);
     table->Add(m_entry2, 0, wxALIGN_TOP);
@@ -56,7 +55,7 @@ ICPDialog::ICPDialog(wxWindow* parent)
     table->Add(m_entry4, 0, wxALIGN_TOP);
 
     table->Add(new wxStaticText(m_pane, wxID_ANY,
-                   "Minimum change between iterations:"),
+                   "Minimum relative MSE change between iterations:"),
         0, wxALIGN_CENTER_VERTICAL);
     m_eps = new wxTextCtrl(m_pane, wxID_ANY);
     table->Add(m_eps, 0, wxALIGN_TOP);
@@ -70,7 +69,7 @@ ICPDialog::ICPDialog(wxWindow* parent)
     table->Add(m_entry5, 0, wxALIGN_TOP);
 
     m_check1 = new wxCheckBox(
-        m_pane, wxID_ANY, "Run ICP (or just apply the initial transform)");
+        m_pane, wxID_ANY, "Run ICP (untick will just apply the initial transform)");
     m_check1->SetValue(m_pane);
     m_vbox->Add(m_check1, 0, wxALL, 10);
 
