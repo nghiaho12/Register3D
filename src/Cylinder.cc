@@ -1,7 +1,7 @@
-#include "Cylinder.h"
-#include "Math2.h"
-#include "Point.h"
 #include <cmath>
+#include "Cylinder.h"
+#include "Point.h"
+#include "Misc.h"
 
 Cylinder::Cylinder() {}
 
@@ -71,7 +71,7 @@ void Cylinder::SetRadius(float radius)
         Point center;
         float CurrentRadius;
 
-        Math2::CircleEquation(P1, P2, P3, center, CurrentRadius);
+        CircleEquation(P1, P2, P3, center, CurrentRadius);
 
         Point Vect1(P1.x - center.x, P1.y - center.y, P1.z - center.z);
         Point Vect2(P2.x - center.x, P2.y - center.y, P2.z - center.z);
@@ -125,8 +125,8 @@ void Cylinder::Update()
         Point center;
         float a, b, c, d;
 
-        Math2::CircleEquation(P1, P2, P3, center, m_radius);
-        Math2::PlaneEquation(P1, P2, P3, a, b, c, d);
+        CircleEquation(P1, P2, P3, center, m_radius);
+        PlaneEquation(P1, P2, P3, a, b, c, d);
 
         Point P4;
 
@@ -141,7 +141,7 @@ void Cylinder::Update()
             P4 = ControlPoints[3];
         }
 
-        float length = Math2::DistancePointPlane(P4, a, b, c, d);
+        float length = DistancePointPlane(P4, a, b, c, d);
 
         Point end1(center.x + a * length, center.y + b * length,
             center.z + c * length);

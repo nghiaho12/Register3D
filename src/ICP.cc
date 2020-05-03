@@ -1,10 +1,12 @@
-#include "ICP.h"
 #include <algorithm>
 #include <iostream>
 #include <numeric>
 #include <sstream>
+#include <chrono>
+
 #include <Eigen/SVD>
 
+#include "ICP.h"
 #include "ICPPoint.h"
 #include "Misc.h"
 #include "Point.h"
@@ -20,11 +22,6 @@ ICP::ICP(SharedData &shared_data) :
 
 void ICP::SetLTS(float a) { m_LTS = a; }
 
-bool ICP::ByDistSq(const ICPPoint& a, const ICPPoint& b)
-{
-    return a.dist_sq < b.dist_sq;
-}
-
 void ICP::Run(Eigen::Matrix4d& Transform)
 {
     // Some distance statistics
@@ -37,7 +34,7 @@ void ICP::Run(Eigen::Matrix4d& Transform)
     };
 
     if (m_text) {
-        m_text->AppendText("Determining square distance to trim at ... ");
+        m_text->AppendText("Determining square distance to trim at ...\n");
         update_text();
     }
 
@@ -88,11 +85,6 @@ void ICP::Run(Eigen::Matrix4d& Transform)
 
     std::vector<ICPPoint> Points2p;
 
-    if (m_text) {
-        m_text->AppendText("Trimming points ... ");
-        update_text();
-    }
-
     // Find which points to use based on trimDist and also finds the centroid of
     // the two points
     Point centroid1, centroid2;
@@ -109,16 +101,6 @@ void ICP::Run(Eigen::Matrix4d& Transform)
     int count = 0;
 
     for (size_t i = 0; i < m_points1.size(); i++) {
-        if (i % 100000 == 0) {
-            if (m_text) {
-                std::stringstream ss;
-
-                ss << i * 100 / (float)m_points1.size() << "% ";
-                m_text->AppendText(ss.str());
-                update_text();
-            }
-        }
-
         if (m_points1[i].dist_sq > trimDist) {
             continue;
         }
@@ -134,11 +116,6 @@ void ICP::Run(Eigen::Matrix4d& Transform)
         centroid2.z += m_points1[i].nearest.z;
 
         count++;
-    }
-
-    if (m_text) {
-        m_text->AppendText("100%\n");
-        update_text();
     }
 
     m_MSE = sum_dist / count;
@@ -160,22 +137,12 @@ void ICP::Run(Eigen::Matrix4d& Transform)
     H.setZero();
 
     if (m_text) {
-        m_text->AppendText("Calculating optimal rotation ... ");
+        m_text->AppendText("Calculating optimal transform ... \n");
         update_text();
     }
+    std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
     for (size_t i = 0; i < m_points1.size(); i++) {
-        if (i % 100000 == 0) {
-            if (m_text) {
-                std::stringstream ss;
-
-                ss << i * 100 / (float)m_points1.size() << "% ";
-                m_text->AppendText(ss.str());
-
-                update_text();
-            }
-        }
-
         if (m_points1[i].dist_sq > trimDist) {
             continue;
         }
@@ -191,11 +158,6 @@ void ICP::Run(Eigen::Matrix4d& Transform)
         B(2) = m_points1[i].nearest.z - centroid2.z;
 
         H += A * B.transpose();
-    }
-
-    if (m_text) {
-        m_text->AppendText("100%\n");
-        update_text();
     }
 
     Eigen::JacobiSVD<Eigen::Matrix3d> svd(H, Eigen::ComputeFullU | Eigen::ComputeFullV);
@@ -259,12 +221,12 @@ void ICP::SetPoints(std::vector<Point>& P1, std::vector<Point>& P2,
         }
     };
 
-    // EXPERIMENTAL:
+    // NOTE:
     // The aim of this is to save as much memory as possible.
     // We downsample the points before loading it into the ANN library. At the
     // same time we want to avoid over downsampling. We want the process result
-    // in: scan2 -> overlapping region filtering -> down sample > initial outlier
-    // distance -> max point filtering = number of points scan2 is m_max_points So
+    // in: point cloud2 -> overlapping region filtering -> down sample > initial outlier
+    // distance -> max point filtering = number of points point cloud2 is m_max_points So
     // basically, we want all the filtering and downsampling stuff to leave enough
     // points to meet the user's requested MaxPoint parameter if possible
 
@@ -297,7 +259,7 @@ void ICP::SetPoints(std::vector<Point>& P1, std::vector<Point>& P2,
 
     // for displaying purposes
     if (m_text) {
-        m_text->AppendText("Downsampling and filtering first scan for ICP ... ");
+        m_text->AppendText("Downsampling and filtering first point cloud for ICP ... \n");
     }
 
     for (size_t i = 0;
@@ -318,8 +280,9 @@ void ICP::SetPoints(std::vector<Point>& P1, std::vector<Point>& P2,
 
         Point2DB.FindClosest(filtered1[i], dist, index);
 
-        if (dist < sq_dist)
+        if (dist < sq_dist) {
             m_points1.push_back(ICPPoint(filtered1[i]));
+        }
     }
 
     if (m_text) {
@@ -342,7 +305,7 @@ void ICP::SetPoints(std::vector<Point>& P1, std::vector<Point>& P2,
     Point1DB.SetPoints(m_points1);
 
     if (m_text) {
-        m_text->AppendText("Downsampling and filtering second scan for ICP ... ");
+        m_text->AppendText("Downsampling and filtering second point cloud for ICP ... \n");
     }
 
     // Do the same again
@@ -401,112 +364,4 @@ void ICP::SetwxTextCtrl(wxTextCtrl* t) // Used for m_text feedback from ICP
 void ICP::SetwxApp(wxApp* a) // Used for m_text feedback from ICP
 {
     m_app = a;
-}
-
-void ICP::CalcOverlappingRegion(std::vector<Point>& P1, std::vector<Point>& P2,
-    Point& start, Point& end)
-{
-    // Calculates the overlapping region of the bounding box around thw two point
-    // cloud
-
-    // First calculate the bounding boxes
-    Point box1_start, box2_start;
-    Point box1_end, box2_end;
-
-    box1_start.x = 0;
-    box1_start.y = 0;
-    box1_start.z = 0;
-
-    box2_start = box1_start;
-    box1_end = box1_start;
-    box2_end = box1_start;
-
-    for (size_t i = 0; i < P1.size(); i++) {
-        if (P1[i].x < box1_start.x) {
-            box1_start.x = P1[i].x;
-        }
-
-        if (P1[i].y < box1_start.y) {
-            box1_start.y = P1[i].y;
-        }
-
-        if (P1[i].z < box1_start.z) {
-            box1_start.z = P1[i].z;
-        }
-
-        if (P1[i].x > box1_end.x) {
-            box1_end.x = P1[i].x;
-        }
-
-        if (P1[i].y > box1_end.y) {
-            box1_end.y = P1[i].y;
-        }
-
-        if (P1[i].z > box1_end.z) {
-            box1_end.z = P1[i].z;
-        }
-    }
-
-    for (size_t i = 0; i < P2.size(); i++) {
-        if (P2[i].x < box2_start.x) {
-            box2_start.x = P2[i].x;
-        }
-
-        if (P2[i].y < box2_start.y) {
-            box2_start.y = P2[i].y;
-        }
-
-        if (P2[i].z < box2_start.z) {
-            box2_start.z = P2[i].z;
-        }
-
-        if (P2[i].x > box2_end.x) {
-            box2_end.x = P2[i].x;
-        }
-
-        if (P2[i].y > box2_end.y) {
-            box2_end.y = P2[i].y;
-        }
-
-        if (P2[i].z > box2_end.z) {
-            box2_end.z = P2[i].z;
-        }
-    }
-
-    std::vector<float> s;
-
-    // x
-    s.push_back(box1_start.x);
-    s.push_back(box1_end.x);
-    s.push_back(box2_start.x);
-    s.push_back(box2_end.x);
-
-    std::sort(s.begin(), s.end());
-
-    start.x = s[1];
-    end.x = s[2];
-
-    // y
-    s.clear();
-    s.push_back(box1_start.y);
-    s.push_back(box1_end.y);
-    s.push_back(box2_start.y);
-    s.push_back(box2_end.y);
-
-    std::sort(s.begin(), s.end());
-
-    start.y = s[1];
-    end.y = s[2];
-
-    // z
-    s.clear();
-    s.push_back(box1_start.z);
-    s.push_back(box1_end.z);
-    s.push_back(box2_start.z);
-    s.push_back(box2_end.z);
-
-    std::sort(s.begin(), s.end());
-
-    start.z = s[1];
-    end.z = s[2];
 }

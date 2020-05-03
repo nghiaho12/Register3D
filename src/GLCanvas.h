@@ -3,7 +3,6 @@
 #include <GL/glew.h>
 #include "Cylinder.h"
 #include "Global.h"
-#include "Math2.h"
 #include "Sphere.h"
 #include "ZPR.h"
 #include <iostream>
@@ -30,7 +29,7 @@ public:
     void ClearSphere();
     ZPR& GetZPR();
     bool GetIsFocused();
-    void SetIsFirstScan(bool set);
+    void SetIndex(int idx);
     std::vector<Point>& GetControlPoints();
     void CentreView();
     void ViewTopdown();
@@ -52,13 +51,12 @@ private:
     // User interaction
     bool AddControlPoints(int mousex, int mousey);
     void MoveOrigin(int mousex, int mousey);
-    bool SelectNearestControlPoint(int mousex, int mousey);
 
 private:
     wxGLContext m_context;
     SharedData &m_shared_data;
 
-    bool m_is_first_point_cloud; // first or second
+    int m_idx = 0; // first or second
 
     // OpenGL related stuff
     ZPR m_ZPR;
@@ -76,7 +74,6 @@ private:
 
     // State variables governing user interaction
     std::vector<Point> m_control_points;
-    std::vector<Point*> m_selected_points; // Currently selected point, for moving
     std::vector<Sphere> m_spheres;
 
     int m_last_mouse_x;

@@ -27,9 +27,6 @@ public:
     double GetMSE();
 
 private:
-    void CalcOverlappingRegion(std::vector<Point>& P1, std::vector<Point>& P2, Point& start,
-        Point& end);
-    bool ByDistSq(const ICPPoint& a, const ICPPoint& b);
 
 private:
     SharedData &m_shared_data;

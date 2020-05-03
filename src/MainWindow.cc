@@ -2,7 +2,6 @@
 #include <fstream>
 
 #include <wx/artprov.h>
-#include <wx/wfstream.h>
 
 #include "MainWindow.h"
 #include "Misc.h"
@@ -12,7 +11,7 @@
 enum {
     OPEN_1 = wxID_HIGHEST + 1,
     OPEN_2,
-    REGISTER_SCANS,
+    REGISTER_POINTCLOUD,
     VIEW_REGISTERED,
     TIMER_ID,
     CANVAS1,
@@ -36,7 +35,7 @@ EVT_MENU(SAVE_MATRIX, MainWindow::SaveMatrix)
 EVT_MENU(wxID_EXIT, MainWindow::OnQuit)
 EVT_MENU(HELP, MainWindow::Help)
 EVT_MENU(wxID_ABOUT, MainWindow::AboutClick)
-EVT_BUTTON(REGISTER_SCANS, MainWindow::StitchScans)
+EVT_BUTTON(REGISTER_POINTCLOUD, MainWindow::RegisterPointCloud)
 EVT_BUTTON(VIEW_REGISTERED, MainWindow::ViewMerged)
 EVT_TIMER(TIMER_ID, MainWindow::OnTimer)
 END_EVENT_TABLE()
@@ -95,7 +94,7 @@ MainWindow::MainWindow()
 
     wxToolBar* toolBar = new wxToolBar(this, wxID_ANY);
 
-    m_register_btn = new wxButton(toolBar, REGISTER_SCANS, "Register");
+    m_register_btn = new wxButton(toolBar, REGISTER_POINTCLOUD, "Register");
     toolBar->AddControl(m_register_btn);
 
     m_viewmerge_btn = new wxButton(toolBar, VIEW_REGISTERED, "Toggle view");
@@ -129,8 +128,8 @@ MainWindow::MainWindow()
     m_canvas[0]->Disable();
     m_canvas[1]->Disable();
 
-    m_canvas[0]->SetIsFirstScan(true);
-    m_canvas[1]->SetIsFirstScan(false);
+    m_canvas[0]->SetIndex(0);
+    m_canvas[1]->SetIndex(1);
 
     auto *vbox1 = new wxBoxSizer(wxVERTICAL);
     auto *vbox2 = new wxBoxSizer(wxVERTICAL);
@@ -163,7 +162,7 @@ MainWindow::MainWindow()
     m_canvas[0]->SetwxTextCtrl(m_status);
     m_canvas[1]->SetwxTextCtrl(m_status);
 
-    // Setup the OpenGL canvas for merged scans
+    // Setup the OpenGL canvas for merged PointClouds
     m_merged_view = new GLCanvas(this, wxID_ANY, MERGED_MODE, m_shared_data);
     m_merged_view->Hide();
     m_merged_view->Disable();
@@ -291,7 +290,7 @@ bool MainWindow::OpenFile(int idx)
             m_merged_view->LoadPointsForFastview(m_shared_data.point[0], m_shared_data.point[1]);
         }
 
-        FalseColourScan(m_shared_data.point[idx], m_shared_data.false_colour[idx]);
+        FalseColourPointCloud(m_shared_data.point[idx], m_shared_data.false_colour[idx]);
 
         m_canvas[idx]->Draw();
 
@@ -325,11 +324,19 @@ void MainWindow::OnTimer(wxTimerEvent& event)
         m_register_btn->Disable();
     }
 
+    auto magnitude = [](const Point &a, const Point &b) {
+        float dx = a.x - b.x;
+        float dy = a.y - b.y;
+        float dz = a.z - b.z;
+
+        return std::sqrt(dx*dx + dy*dy + dz*dz);
+    };
+
     // User assisted spheres
     if (m_canvas[0]->GetControlPoints().size() >= 2 && m_canvas[1]->GetControlPoints().size() == 1) {
         m_canvas[1]->ClearSphere();
 
-        float radius = Math2::Magnitude(m_canvas[0]->GetControlPoints()[0],
+        float radius = magnitude(m_canvas[0]->GetControlPoints()[0],
             m_canvas[0]->GetControlPoints()[1]);
 
         Point& P = m_canvas[1]->GetControlPoints()[0];
@@ -338,14 +345,14 @@ void MainWindow::OnTimer(wxTimerEvent& event)
     } else if (m_canvas[0]->GetControlPoints().size() == 3 && m_canvas[1]->GetControlPoints().size() == 2) {
         m_canvas[1]->ClearSphere();
 
-        float radius = Math2::Magnitude(m_canvas[0]->GetControlPoints()[0],
+        float radius = magnitude(m_canvas[0]->GetControlPoints()[0],
             m_canvas[0]->GetControlPoints()[2]);
 
         Point& P1 = m_canvas[1]->GetControlPoints()[0];
 
         m_canvas[1]->AddSphere(P1.x, P1.y, P1.z, radius);
 
-        radius = Math2::Magnitude(m_canvas[0]->GetControlPoints()[1],
+        radius = magnitude(m_canvas[0]->GetControlPoints()[1],
             m_canvas[0]->GetControlPoints()[2]);
 
         Point& P2 = m_canvas[1]->GetControlPoints()[1];
@@ -354,7 +361,7 @@ void MainWindow::OnTimer(wxTimerEvent& event)
     }
 }
 
-void MainWindow::StitchScans(wxCommandEvent& event)
+void MainWindow::RegisterPointCloud(wxCommandEvent& event)
 {
     ICP icp(m_shared_data);
     Eigen::Matrix4d initial_transform, icp_transform, tmp_matrix;
@@ -374,10 +381,10 @@ void MainWindow::StitchScans(wxCommandEvent& event)
     m_transform.setIdentity();
 
     // Pre-registration
-    PointOP::GetTransform(m_canvas[0]->GetControlPoints(),
-        m_canvas[1]->GetControlPoints(), initial_transform);
+    initial_transform = PointOP::GetTransform(m_canvas[0]->GetControlPoints(),
+        m_canvas[1]->GetControlPoints());
 
-    m_status->AppendText("Initial transformation from the selected points\n");
+    m_status->AppendText("\nInitial transformation from the selected points\n");
 
     for (int i = 0; i < initial_transform.rows(); i++) {
         for (int j = 0; j < initial_transform.cols(); j++) {
@@ -448,7 +455,7 @@ void MainWindow::StitchScans(wxCommandEvent& event)
             }
 
             ss.str("");
-            ss << "MSE: " << icp.GetMSE() << " change: " << change << "\n";
+            ss << "MSE: " << icp.GetMSE() << ", change: " << change << "\n";
             m_status->AppendText(ss.str());
 
             while (m_app->Pending()) {
@@ -673,7 +680,7 @@ void MainWindow::SaveMatrixToFile(const wxString& dialog_path)
     m_status->AppendText("Transformation matrix saved to: " + full_path + "\n");
 }
 
-void MainWindow::FalseColourScan(std::vector<Point>& points,
+void MainWindow::FalseColourPointCloud(std::vector<Point>& points,
     std::vector<RGB>& false_colour)
 {
     false_colour.resize(points.size());

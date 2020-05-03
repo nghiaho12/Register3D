@@ -17,7 +17,7 @@ public:
 
 private:
     void InitFalseColour();
-    void FalseColourScan(std::vector<Point>& points, std::vector<RGB>& false_colour);
+    void FalseColourPointCloud(std::vector<Point>& points, std::vector<RGB>& false_colour);
 
     void OnQuit(wxCommandEvent& event);
     void OnQuit2(wxCloseEvent& event);
@@ -27,7 +27,7 @@ private:
     bool OpenFile(int idx);
     void OpenFirstFile(wxCommandEvent& event);
     void OpenSecondFile(wxCommandEvent& event);
-    void StitchScans(wxCommandEvent& event);
+    void RegisterPointCloud(wxCommandEvent& event);
     void ViewMerged(wxCommandEvent& event);
     void SaveAs(std::vector<Point>& p, bool first, bool m_save_matrix);
     void SaveAsFirstAndMatrix(wxCommandEvent& event);

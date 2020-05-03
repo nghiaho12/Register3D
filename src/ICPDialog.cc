@@ -82,11 +82,11 @@ ICPDialog::ICPDialog(wxWindow* parent)
 
     // Some default values
     m_entry1->SetValue("1000000");
-    m_entry2->SetValue("1.0");
+    m_entry2->SetValue("0.1");
     m_entry3->SetValue("0.9");
     m_entry4->SetValue("20");
     m_entry5->SetValue("0");
-    m_eps->SetValue("0.01");
+    m_eps->SetValue("0.001");
 
     m_pane->SetSizer(m_vbox);
     m_vbox->SetSizeHints(this);

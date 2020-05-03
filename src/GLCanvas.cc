@@ -88,10 +88,10 @@ void GLCanvas::OnMouse(wxMouseEvent& event)
             if (m_text) {
                 std::stringstream ss;
 
-                if (m_is_first_point_cloud) {
-                    ss << "First scan: registration point ";
+                if (m_idx == 0) {
+                    ss << "First point cloud registration point ";
                 } else {
-                    ss << "Second scan: registration point ";
+                    ss << "Second point cloud registration point ";
                 }
 
                 const auto &p = m_control_points.back();
@@ -105,17 +105,10 @@ void GLCanvas::OnMouse(wxMouseEvent& event)
         // CTRL + Left mouse button - Move reference point
         else if (event.GetButton() == wxMOUSE_BTN_LEFT && event.ControlDown()) {
             MoveOrigin((int)event.GetX(), (int)event.GetY());
-        } /*
-     else if(event.GetButton() == wxMOUSE_BTN_RIGHT) // Selected control point
-     to move
-     {
-         SelectNearestControlPoint((int)event.GetX(), (int)event.GetY());
-     }*/
-        else if (event.GetButton() == wxMOUSE_BTN_LEFT) // Turn off control point movement
-        {
+        }  else if (event.GetButton() == wxMOUSE_BTN_LEFT) {
+            // Turn off control point movement
             m_move_point_on = false;
             m_last_mouse_x = -1;
-        } else {
         }
     }
 
@@ -125,40 +118,7 @@ void GLCanvas::OnMouse(wxMouseEvent& event)
         m_ZPR.zprMouse(event);
     }
 
-    if (m_move_point_on && m_selected_points.size() > 0) {
-        if (m_last_mouse_x == -1) {
-            m_last_mouse_x = (int)event.GetX();
-            m_last_mouse_y = (int)event.GetY();
-        }
-
-        int dx = (int)event.GetX() - m_last_mouse_x;
-        int dy = (int)event.GetY() - m_last_mouse_y;
-
-        // Find the 2D coord of m_selected_points
-        float xi, yi;
-        float zbuffer;
-
-        Point& ControlPoint = *m_selected_points[0];
-
-        OGLWrapper::Get3Dto2D(ControlPoint.x, ControlPoint.y, ControlPoint.z, xi,
-            yi, zbuffer);
-
-        // Find the moved position
-        float curx = xi + dx;
-        float cury = yi + dy;
-
-        // Project back to 3D
-        Point P;
-        OGLWrapper::Get2Dto3D(curx, cury, zbuffer, P.x, P.y,
-            P.z); // Convert 2D to 3D
-
-        ControlPoint = P;
-
-        m_last_mouse_x = (int)event.GetX();
-        m_last_mouse_y = (int)event.GetY();
-    } else {
-        m_ZPR.zprMotion(event);
-    }
+    m_ZPR.zprMotion(event);
 
     Refresh(false);
 }
@@ -228,19 +188,6 @@ void GLCanvas::OnKeyDown(wxKeyEvent& event)
 
         break;
     }
-    case 'M': {
-        if (m_selected_points.size() <= 0) {
-            return;
-        }
-
-        if (m_move_point_on) {
-            m_move_point_on = false;
-        } else {
-            m_move_point_on = true;
-        }
-
-        break;
-    }
     case 'G': {
         m_ZPR.CenterReference();
 
@@ -295,37 +242,24 @@ void GLCanvas::RenderScene()
             // Bring back to normal operations
             glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
         } else {
-            if (m_is_first_point_cloud && m_shared_data.point[0].size()) {
+            if (!m_shared_data.point[m_idx].empty()) {
                 glEnableClientState(GL_COLOR_ARRAY);
                 glEnableClientState(GL_VERTEX_ARRAY);
 
                 if (m_use_mono_colour) {
-                    glColorPointer(3, GL_UNSIGNED_BYTE, 0, &m_shared_data.false_colour[0][0]);
+                    glColorPointer(3, GL_UNSIGNED_BYTE, 0, m_shared_data.false_colour[m_idx].data());
                 } else {
-                    glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_shared_data.point[0][0].r);
+                    glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_shared_data.point[m_idx][0].r);
                 }
 
-                glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_shared_data.point[0][0]);
-                glDrawArrays(GL_POINTS, 0, m_shared_data.point[0].size());
+                glVertexPointer(3, GL_FLOAT, sizeof(Point), m_shared_data.point[m_idx].data());
+                glDrawArrays(GL_POINTS, 0, m_shared_data.point[m_idx].size());
 
                 glDisableClientState(GL_COLOR_ARRAY);
                 glDisableClientState(GL_VERTEX_ARRAY);
-            } else if (!m_is_first_point_cloud && m_shared_data.point[1].size()) {
-                glEnableClientState(GL_COLOR_ARRAY);
-                glEnableClientState(GL_VERTEX_ARRAY);
+            }
 
-                if (m_use_mono_colour) {
-                    glColorPointer(3, GL_UNSIGNED_BYTE, 0, &m_shared_data.false_colour[1][0]);
-                } else {
-                    glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_shared_data.point[1][0].r);
-                }
-
-                glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_shared_data.point[1][0]);
-                glDrawArrays(GL_POINTS, 0, m_shared_data.point[1].size());
-
-                glDisableClientState(GL_COLOR_ARRAY);
-                glDisableClientState(GL_VERTEX_ARRAY);
-
+            if (m_idx == 1 && !m_shared_data.point[m_idx].empty()) {
                 if (m_mask_spheres && m_spheres.size() == 1) {
                     float RadiusSq = m_spheres[0].radius * m_spheres[0].radius;
 
@@ -481,27 +415,6 @@ void GLCanvas::DrawAxis(Point& P)
     glTranslatef(start.x, start.y, start.z);
     gluSphere(m_quadric, radius * 1.5, 32, 32);
     glPopMatrix();
-
-    /*
-          glBegin(GL_LINES);
-                  glVertex3f(P.x, P.y, P.z);
-                  glVertex3f(P.x + 2.0, P.y, P.z);
-          glEnd();
-
-          glColor3f(0.0, 1.0, 0.0);
-
-          glBegin(GL_LINES);
-                  glVertex3f(P.x, P.y, P.z);
-                  glVertex3f(P.x, P.y + 2.0, P.z);
-          glEnd();
-
-          glColor3f(0.0, 0.0, 1.0);
-
-          glBegin(GL_LINES);
-                  glVertex3f(P.x, P.y, P.z);
-                  glVertex3f(P.x, P.y, P.z + 2.0);
-          glEnd();
-  */
 }
 
 void GLCanvas::DrawControlPoints(Point& P)
@@ -509,12 +422,6 @@ void GLCanvas::DrawControlPoints(Point& P)
     glPointSize(5.0);
 
     glColor3f(0.0, 1.0, 1.0);
-
-    if (m_selected_points.size() > 0) {
-        if (&P == m_selected_points[0]) {
-            glColor3f(1.0, 0.0, 0.0);
-        }
-    }
 
     glBegin(GL_POINTS);
     glVertex3f(P.x, P.y, P.z);
@@ -614,50 +521,14 @@ void GLCanvas::MoveOrigin(int mousex, int mousey)
     m_ZPR.SetOrigin(ref.x, ref.y, ref.z);
 }
 
-bool GLCanvas::SelectNearestControlPoint(int mousex, int mousey)
-{
-    // Find the nearest control point
-    // We'll search in m_control_points, Cuboides, Cylinders
-    constexpr float max_dist = 20.0f;
-
-    Point* point_ptr = NULL;
-
-    int x, y;
-    float zbuffer;
-    float min_dist = std::numeric_limits<float>::max();
-
-    // Search control points
-    for (size_t i = 0; i < m_control_points.size(); i++) {
-        Point& P = m_control_points[i];
-
-        OGLWrapper::Get3Dto2D(P.x, P.y, P.z, x, y, zbuffer);
-
-        float dist = sqrt((float)(x - mousex) * (x - mousex) + (y - mousey) * (y - mousey));
-
-        if (dist < min_dist && dist < max_dist) {
-            min_dist = dist;
-
-            point_ptr = &P;
-        }
-    }
-
-    m_selected_points.clear();
-
-    if (min_dist < max_dist) {
-        m_selected_points.push_back(point_ptr);
-    }
-
-    return false;
-}
-
-void GLCanvas::DrawCylinder(Cylinder& CylinderRef)
+void GLCanvas::DrawCylinder(Cylinder& cylinder)
 {
     glPushMatrix();
 
     // length of cylinder
-    float xx = CylinderRef.GetEnd().x - CylinderRef.GetStart().x;
-    float yy = CylinderRef.GetEnd().y - CylinderRef.GetStart().y;
-    float zz = CylinderRef.GetEnd().z - CylinderRef.GetStart().z;
+    float xx = cylinder.GetEnd().x - cylinder.GetStart().x;
+    float yy = cylinder.GetEnd().y - cylinder.GetStart().y;
+    float zz = cylinder.GetEnd().z - cylinder.GetStart().z;
 
     float length = sqrt(xx * xx + yy * yy + zz * zz);
 
@@ -669,40 +540,21 @@ void GLCanvas::DrawCylinder(Cylinder& CylinderRef)
 
     float a, b, c, d;
 
-    Math2::PlaneEquation(P1, P2, P3, a, b, c, d);
+    PlaneEquation(P1, P2, P3, a, b, c, d);
 
     // Find angle between vector Z (P2) and end (P3)
-    float angle = Math2::AngleBetweenVectors(P2, P3) * 180.0 / M_PI;
+    float angle = AngleBetweenVectors(P2, P3) * 180.0 / M_PI;
 
     // Translate
-    glTranslatef(CylinderRef.GetStart().x, CylinderRef.GetStart().y,
-        CylinderRef.GetStart().z);
+    glTranslatef(cylinder.GetStart().x, cylinder.GetStart().y,
+        cylinder.GetStart().z);
 
     // Rotate
     glRotatef(angle, a, b, c);
-    /*
-          if(CylinderRef.GetTexture().HasPixels())
-          {
-                  gluQuadricDrawStyle(m_quadric, GLU_FILL);
 
-                  glColor3f(1.0, 1.0, 1.0);
-
-                  glEnable(GL_TEXTURE_2D);
-
-                  glBindTexture(GL_TEXTURE_2D, CylinderRef.GetTextureID());
-
-                  gluCylinder(m_quadric, CylinderRef.GetRadius(),
-     CylinderRef.GetRadius(), length, 32, 32);
-
-                  glDisable(GL_TEXTURE_2D);
-          }
-          else*/
-    {
-        gluQuadricDrawStyle(m_quadric, GLU_LINE);
-
-        gluCylinder(m_quadric, CylinderRef.GetRadius(), CylinderRef.GetRadius(),
-            length, 32, 32);
-    }
+    gluQuadricDrawStyle(m_quadric, GLU_LINE);
+    gluCylinder(m_quadric, cylinder.GetRadius(), cylinder.GetRadius(),
+        length, 32, 32);
 
     glPopMatrix();
 }
@@ -883,7 +735,7 @@ void GLCanvas::LoadPoints(std::vector<Point> points)
     delete[] false_colour;
 }
 
-void GLCanvas::SetIsFirstScan(bool set) { m_is_first_point_cloud = set; }
+void GLCanvas::SetIndex(int idx) { m_idx = idx; }
 
 void GLCanvas::InitGL()
 {

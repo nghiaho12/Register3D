@@ -1,12 +1,10 @@
 #pragma once
 
-#include "Point.h"
 #include <vector>
-#include <wx/wx.h>
+#include <string>
+#include "Point.h"
 
 constexpr int MAX_POINTS_ON_GPU = 1000000; // Downsample the points when the point cloud is manipulated
-
-const wxString REGISTER3D_VER = wxT("1.1.1");
 
 struct RGB {
     unsigned char r, g, b;

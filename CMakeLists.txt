@@ -58,8 +58,6 @@ add_library(lib
     src/ICPPoint.h
     src/MainWindow.cc
     src/MainWindow.h
-    src/Math2.cc
-    src/Math2.h
     src/Misc.cc
     src/Misc.h
     src/MyANN.cc
