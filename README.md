@@ -66,6 +66,8 @@ Once the point clouds are loaded you can navigate the 3D view with the following
 ## Add registration points
 You will need to add 4 registration points betwen the first and second point cloud. Navigate the two views so you can see the common 3D point. Add the registration by SHIFT + LEFT clicking on the point in the first and second point cloud. If at anytime you make a mistake you can undo the added point via the ESC key. Once you have 4 registration points the **Register** button will enable.
 
+![](https://github.com/nghiaho12/Register3D/blob/master/images/register3d_1.jpg "Adding registration points")
+
 ## Register
 Click the Register button. You'll be presented with some options for the registration algorithm, which uses iterative closest point (ICP). Here is what each of them do
 
@@ -80,6 +82,8 @@ Click OK when you are happy with the settings.
 
 ## After registration
 When ICP has finished, the 3D view will automatically switch to a merged view showing both point clouds in the same world. You can switch to false colour via the C key to see how well the registration is. To go back to the split view click the **Toggle view** button at the top.
+
+![](https://github.com/nghiaho12/Register3D/blob/master/images/register3d_2.jpg "Merged view with false colouring")
 
 You can now save the result of the registration via **File -> Save first point cloud and transformation matrix** or **File -> Save transformation matrix**. The first option will save both PLY and matrix file, the latter only saves the matrix transform. The transformation matrix is saved out as a text file as row major.
 
