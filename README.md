@@ -1,4 +1,4 @@
-Register3D is a 3D point cloud registration tool. Given two point clouds and a set of user selected registration points it will iteratively find an optimal transform between the two sets, such that the Euclidean distance the first set and all nearest neighbours in the second set are minimized. The output transform matrix is a typical 4x4 matrix of the form
+Register3D is a 3D point cloud registration tool. Given two point clouds and a set of user selected registration points it will iteratively find an optimal transform between the two sets, such that the Euclidean distance between the first set and its nearest neighbours in the second set are minimized. The output transform matrix is a typical 4x4 matrix of the form
 
 ```
 |R0 R1 R2 TX|
@@ -13,7 +13,7 @@ This software was written during my PhD (circa 2005) for aligning 3D point cloud
 
 Email: nghiaho12@yahoo.com
 
-Website: http://nghiaho.com
+Project website: http://nghiaho.com/?page_id=227
 
 # Compiling on Linux
 Reigster3D has been tested on Ubuntu 18.04. It should work on Windows/MacOS since it uses cross platform libraries, but the CMakeLists.txt will probably need modification.
@@ -89,4 +89,5 @@ You can now save the result of the registration via **File -> Save first point c
 
 # TODO
 - Unit tests!
+- Test with more PLY files
 - Update to modern OpenGL 3+
