@@ -64,7 +64,7 @@ Once the point clouds are loaded you can navigate the 3D view with the following
 - **S** - toggle assisstive highlighting using transparent spheres for localising the registration point in the second point cloud
 
 ## Add registration points
-You will need to add 4 registration points betwen the first and second point cloud. Navigate the two views so you can see the common 3D point. Add the registration by SHIFT + LEFT clicking on the point in the first and second point cloud. If at anytime you make a mistake you can undo the added point via the ESC key. Once you have 4 registration points the **Register** button will enable.
+You will need to add 4 registration points betwen the first and second point cloud. Navigate the two views so you can see the common 3D point. Add the registration by SHIFT + LEFT clicking on the point in the first and second point cloud. The control points are shown as a small cyan square. If at anytime you make a mistake you can undo the added point via the ESC key. Once you have 4 registration points the **Register** button will enable.
 
 ![](https://github.com/nghiaho12/Register3D/blob/master/images/register3d_1.jpg "Adding registration points")
 

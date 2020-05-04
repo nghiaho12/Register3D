@@ -16,7 +16,6 @@ public:
 private:
     wxBoxSizer* m_vbox;
     wxButton* m_close;
-    wxButton* m_home;
     wxHtmlWindow* m_html;
 
     DECLARE_EVENT_TABLE()
