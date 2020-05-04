@@ -59,7 +59,7 @@ Once the point clouds are loaded you can navigate the 3D view with the following
 - **CTRL + LEFT click** - move the rotation origin (the 3D axis that is rendered)
 - **SHIFT + LEFT click** - add a registration point
 - **ESC** - delete the last added registration point
-- **C** - toggle the point cloud's colour between real or false colour
+- **C** - toggle false colouring of the point cloud
 - **D** - toggle assisstive highlighting for localising the registration point in the second point cloud
 - **S** - toggle assisstive highlighting using transparent spheres for localising the registration point in the second point cloud
 
