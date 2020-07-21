@@ -223,14 +223,14 @@ void GLCanvas::RenderScene()
             glEnableClientState(GL_VERTEX_ARRAY);
 
             glPointSize(1.0);
-            glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_vertex_array_id);
+            glBindBuffer(GL_ARRAY_BUFFER, m_vertex_array_id);
             glVertexPointer(3, GL_FLOAT, 0, NULL);
 
             if (m_use_mono_colour) {
-                // glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_mono_colour_array_id);
-                glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_false_colour_id);
+                // glBindBuffer(GL_ARRAY_BUFFER, m_mono_colour_array_id);
+                glBindBuffer(GL_ARRAY_BUFFER, m_false_colour_id);
             } else {
-                glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_colour_array_id);
+                glBindBuffer(GL_ARRAY_BUFFER, m_colour_array_id);
             }
 
             glColorPointer(3, GL_UNSIGNED_BYTE, 0, NULL);
@@ -240,7 +240,7 @@ void GLCanvas::RenderScene()
             glDisableClientState(GL_VERTEX_ARRAY);
 
             // Bring back to normal operations
-            glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
         } else {
             if (!m_shared_data.point[m_idx].empty()) {
                 glEnableClientState(GL_COLOR_ARRAY);
@@ -596,10 +596,10 @@ void GLCanvas::LoadPoints(std::vector<Point> points)
 
     // Clear previous buffer if any
     if (m_vertex_array_id > 0) {
-        glDeleteBuffersARB(1, &m_vertex_array_id);
-        glDeleteBuffersARB(1, &m_colour_array_id);
-        glDeleteBuffersARB(1, &m_mono_colour_array_id);
-        glDeleteBuffersARB(1, &m_false_colour_id);
+        glDeleteBuffers(1, &m_vertex_array_id);
+        glDeleteBuffers(1, &m_colour_array_id);
+        glDeleteBuffers(1, &m_mono_colour_array_id);
+        glDeleteBuffers(1, &m_false_colour_id);
     }
 
     struct float3 {
@@ -682,35 +682,35 @@ void GLCanvas::LoadPoints(std::vector<Point> points)
     };
 
     // Load the vertex only
-    glGenBuffersARB(1, &m_vertex_array_id);
+    glGenBuffers(1, &m_vertex_array_id);
 
-    glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_vertex_array_id);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vertex_array_id);
     checkError();
-    glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(float3) * limit, v,
-        GL_STATIC_DRAW_ARB);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float3) * limit, v,
+        GL_STATIC_DRAW);
     checkError();
 
     // Load the color only
-    glGenBuffersARB(1, &m_mono_colour_array_id);
-    glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_mono_colour_array_id);
-    glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(uchar3) * limit, mono_colour,
-        GL_STATIC_DRAW_ARB);
+    glGenBuffers(1, &m_mono_colour_array_id);
+    glBindBuffer(GL_ARRAY_BUFFER, m_mono_colour_array_id);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(uchar3) * limit, mono_colour,
+        GL_STATIC_DRAW);
     checkError();
 
-    glGenBuffersARB(1, &m_colour_array_id);
-    glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_colour_array_id);
-    glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(uchar3) * limit, full_colour,
-        GL_STATIC_DRAW_ARB);
+    glGenBuffers(1, &m_colour_array_id);
+    glBindBuffer(GL_ARRAY_BUFFER, m_colour_array_id);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(uchar3) * limit, full_colour,
+        GL_STATIC_DRAW);
     checkError();
 
-    glGenBuffersARB(1, &m_false_colour_id);
-    glBindBufferARB(GL_ARRAY_BUFFER_ARB, m_false_colour_id);
-    glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(uchar3) * limit, false_colour,
-        GL_STATIC_DRAW_ARB);
+    glGenBuffers(1, &m_false_colour_id);
+    glBindBuffer(GL_ARRAY_BUFFER, m_false_colour_id);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(uchar3) * limit, false_colour,
+        GL_STATIC_DRAW);
     checkError();
 
     // revert back to normal operation
-    glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
     checkError();
 
     if (err) {

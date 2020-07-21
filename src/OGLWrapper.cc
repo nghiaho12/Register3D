@@ -25,16 +25,16 @@ void OGLWrapper::CreateVBO(GLuint* VertexID, GLuint* ColourID,
     unsigned int size)
 {
     // Vertex
-    glGenBuffersARB(1, VertexID);
-    glBindBufferARB(GL_ARRAY_BUFFER_ARB, *VertexID);
-    glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(float) * 3 * size, VertexArray,
-        GL_STATIC_DRAW_ARB);
+    glGenBuffers(1, VertexID);
+    glBindBuffer(GL_ARRAY_BUFFER, *VertexID);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 3 * size, VertexArray,
+        GL_STATIC_DRAW);
 
     // Colour
-    glGenBuffersARB(1, ColourID);
-    glBindBufferARB(GL_ARRAY_BUFFER_ARB, *ColourID);
-    glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(float) * 3 * size, ColourArray,
-        GL_STATIC_DRAW_ARB);
+    glGenBuffers(1, ColourID);
+    glBindBuffer(GL_ARRAY_BUFFER, *ColourID);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 3 * size, ColourArray,
+        GL_STATIC_DRAW);
 }
 
 void OGLWrapper::Get2Dto3D(int x, int y, float zbuffer, float& xf, float& yf,
