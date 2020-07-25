@@ -190,31 +190,31 @@ void MainWindow::InitFalseColour()
     m_shared_data.false_colour_g.resize(5 * 256);
     m_shared_data.false_colour_b.resize(5 * 256);
 
-    for (int i = 0; i < 255; i++) {
+    for (int i = 0; i < 256; i++) {
         m_shared_data.false_colour_r[i] = 255;
         m_shared_data.false_colour_g[i] = i;
         m_shared_data.false_colour_b[i] = 0;
     }
 
-    for (int i = 255, c = 0; i < 255 * 2; i++, c++) {
+    for (int i = 256, c = 0; i < 256 * 2; i++, c++) {
         m_shared_data.false_colour_r[i] = 255 - c;
         m_shared_data.false_colour_g[i] = 255;
         m_shared_data.false_colour_b[i] = 0;
     }
 
-    for (int i = 255 * 2, c = 0; i < 255 * 3; i++, c++) {
+    for (int i = 256 * 2, c = 0; i < 256 * 3; i++, c++) {
         m_shared_data.false_colour_r[i] = 0;
         m_shared_data.false_colour_g[i] = 255;
         m_shared_data.false_colour_b[i] = c;
     }
 
-    for (int i = 255 * 3, c = 0; i < 255 * 4; i++, c++) {
+    for (int i = 256 * 3, c = 0; i < 256 * 4; i++, c++) {
         m_shared_data.false_colour_r[i] = 0;
         m_shared_data.false_colour_g[i] = 255 - c;
         m_shared_data.false_colour_b[i] = 255;
     }
 
-    for (int i = 255 * 4, c = 0; i < 255 * 5; i++, c++) {
+    for (int i = 256 * 4, c = 0; i < 256 * 5; i++, c++) {
         m_shared_data.false_colour_r[i] = c;
         m_shared_data.false_colour_g[i] = 0;
         m_shared_data.false_colour_b[i] = 255;
@@ -693,9 +693,9 @@ void MainWindow::FalseColourPointCloud(std::vector<Point>& points,
             g = m_shared_data.false_colour_g[0];
             b = m_shared_data.false_colour_b[0];
         } else if (points[i].z > m_shared_data.false_colour_max_z) {
-            r = m_shared_data.false_colour_r[256 * 5 - 1];
-            g = m_shared_data.false_colour_g[256 * 5 - 1];
-            b = m_shared_data.false_colour_b[256 * 5 - 1];
+            r = m_shared_data.false_colour_r.back();
+            g = m_shared_data.false_colour_g.back();
+            b = m_shared_data.false_colour_b.back();
         } else {
             int idx = (points[i].z - m_shared_data.false_colour_min_z) / (m_shared_data.false_colour_max_z - m_shared_data.false_colour_min_z) * 256 * 5;
 
