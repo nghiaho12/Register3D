@@ -140,6 +140,9 @@ bool ReadPLYPoints(
             } else if (type == "uchar") {
                 property_bytes += 1;
                 property_index++;
+            } else if (type == "double") {
+                property_bytes += 8;
+                property_index++;
             } else {
                 // anything here is probably face data
             }
