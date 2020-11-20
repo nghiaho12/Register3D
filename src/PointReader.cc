@@ -238,9 +238,9 @@ bool ReadPLYPoints(
                     float *g = reinterpret_cast<float*>(&bytes[green_offset]);
                     float *b = reinterpret_cast<float*>(&bytes[blue_offset]);
 
-                    p.r = static_cast<uint8_t>(*r / 255.0);
-                    p.g = static_cast<uint8_t>(*g / 255.0);
-                    p.b = static_cast<uint8_t>(*b / 255.0);
+                    p.r = static_cast<uint8_t>(*r * 255.0);
+                    p.g = static_cast<uint8_t>(*g * 255.0);
+                    p.b = static_cast<uint8_t>(*b * 255.0);
                 } else {
                     uint8_t *r = reinterpret_cast<uint8_t*>(&bytes[red_offset]);
                     uint8_t *g = reinterpret_cast<uint8_t*>(&bytes[green_offset]);

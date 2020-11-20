@@ -219,9 +219,6 @@ void MainWindow::InitFalseColour()
         m_shared_data.false_colour_g[i] = 0;
         m_shared_data.false_colour_b[i] = 255;
     }
-
-    m_shared_data.false_colour_min_z = -1.0;
-    m_shared_data.false_colour_max_z = 10.0;
 }
 
 void MainWindow::OnQuit(wxCommandEvent& event)
@@ -685,19 +682,32 @@ void MainWindow::FalseColourPointCloud(std::vector<Point>& points,
 {
     false_colour.resize(points.size());
 
+    std::vector<float> zs(points.size());
+    for (size_t i = 0; i < points.size(); i++) {
+        zs[i] = points[i].z;
+    }
+    std::sort(zs.begin(), zs.end());
+
+    float min_z = zs[static_cast<size_t>(zs.size()*0.01)];
+    float max_z = zs[static_cast<size_t>(zs.size()*0.99)];
+
     for (size_t i = 0; i < points.size(); i++) {
         int r, g, b;
 
-        if (points[i].z < m_shared_data.false_colour_min_z) {
+        if (!std::isfinite(points[i].z)) {
+            continue;
+        }
+
+        if (points[i].z < min_z) {
             r = m_shared_data.false_colour_r[0];
             g = m_shared_data.false_colour_g[0];
             b = m_shared_data.false_colour_b[0];
-        } else if (points[i].z > m_shared_data.false_colour_max_z) {
+        } else if (points[i].z > max_z) {
             r = m_shared_data.false_colour_r.back();
             g = m_shared_data.false_colour_g.back();
             b = m_shared_data.false_colour_b.back();
         } else {
-            int idx = (points[i].z - m_shared_data.false_colour_min_z) / (m_shared_data.false_colour_max_z - m_shared_data.false_colour_min_z) * 256 * 5;
+            int idx = (points[i].z - min_z) / (max_z - min_z) * 256 * 5;
 
             r = m_shared_data.false_colour_r[idx];
             g = m_shared_data.false_colour_g[idx];
