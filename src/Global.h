@@ -10,11 +10,11 @@ struct RGB {
     unsigned char r, g, b;
 };
 
-struct SharedData {
-    std::string filename[2];
-    std::vector<Point> point[2];
-    std::vector<size_t> table[2]; // Allows a reverseable version of random_shuffle()
-    std::vector<RGB> false_colour[2]; // False colour palette
+struct PointCloudData {
+    std::string filename;
+    std::vector<Point> point;
+    std::vector<size_t> table; // Allows a reverseable version of random_shuffle()
+    std::vector<RGB> false_colour; // False colour palette
 
     std::vector<uint8_t> false_colour_r, false_colour_g, false_colour_b;
     float false_colour_min_z, false_colour_max_z;

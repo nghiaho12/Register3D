@@ -12,8 +12,8 @@
 #include "Point.h"
 #include "PointOP.h"
 
-ICP::ICP(SharedData &shared_data) :
-    m_shared_data(shared_data)
+ICP::ICP(std::array<PointCloudData, 2> &pcd) :
+    m_point_cloud_data(pcd)
 {
     m_LTS = 1.0;
     m_text = NULL;
@@ -212,8 +212,8 @@ void ICP::SetPoints(std::vector<Point>& P1, std::vector<Point>& P2,
     std::vector<Point> filtered1, filtered2;
     Point start, end;
 
-    reverseable_shuffle_forward(P1, m_shared_data.table[0]);
-    reverseable_shuffle_forward(P2, m_shared_data.table[1]);
+    reverseable_shuffle_forward(P1, m_point_cloud_data[0].table);
+    reverseable_shuffle_forward(P2, m_point_cloud_data[1].table);
 
     auto update_text = [&]() {
         while (m_app->Pending()) {
@@ -346,8 +346,8 @@ void ICP::SetPoints(std::vector<Point>& P1, std::vector<Point>& P2,
 
     m_ANN_points2.SetPoints(m_points2);
 
-    reverseable_shuffle_backward(P1, m_shared_data.table[0]);
-    reverseable_shuffle_backward(P2, m_shared_data.table[1]);
+    reverseable_shuffle_backward(P1, m_point_cloud_data[0].table);
+    reverseable_shuffle_backward(P2, m_point_cloud_data[1].table);
 }
 
 void ICP::Seteps(float e)

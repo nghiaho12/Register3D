@@ -122,8 +122,8 @@ MainWindow::MainWindow()
     m_GL_panel[0] = new wxPanel(m_splitter_window_h, PANEL1);
     m_GL_panel[1] = new wxPanel(m_splitter_window_h, PANEL2);
 
-    m_canvas[0] = new GLCanvas(m_GL_panel[0], CANVAS1, STITCH_MODE, m_shared_data);
-    m_canvas[1] = new GLCanvas(m_GL_panel[1], CANVAS2, STITCH_MODE, m_shared_data);
+    m_canvas[0] = new GLCanvas(m_GL_panel[0], CANVAS1, STITCH_MODE, m_point_cloud_data);
+    m_canvas[1] = new GLCanvas(m_GL_panel[1], CANVAS2, STITCH_MODE, m_point_cloud_data);
 
     m_canvas[0]->Disable();
     m_canvas[1]->Disable();
@@ -163,7 +163,7 @@ MainWindow::MainWindow()
     m_canvas[1]->SetwxTextCtrl(m_status);
 
     // Setup the OpenGL canvas for merged PointClouds
-    m_merged_view = new GLCanvas(this, wxID_ANY, MERGED_MODE, m_shared_data);
+    m_merged_view = new GLCanvas(this, wxID_ANY, MERGED_MODE, m_point_cloud_data);
     m_merged_view->Hide();
     m_merged_view->Disable();
     vbox->Add(m_merged_view, 1, wxEXPAND);
@@ -186,38 +186,42 @@ MainWindow::MainWindow()
 
 void MainWindow::InitFalseColour()
 {
-    m_shared_data.false_colour_r.resize(5 * 256);
-    m_shared_data.false_colour_g.resize(5 * 256);
-    m_shared_data.false_colour_b.resize(5 * 256);
+    for (size_t k=0; k < m_point_cloud_data.size(); k++) {
+        PointCloudData &pcd = m_point_cloud_data[k];
 
-    for (int i = 0; i < 256; i++) {
-        m_shared_data.false_colour_r[i] = 255;
-        m_shared_data.false_colour_g[i] = i;
-        m_shared_data.false_colour_b[i] = 0;
-    }
+        pcd.false_colour_r.resize(5 * 256);
+        pcd.false_colour_g.resize(5 * 256);
+        pcd.false_colour_b.resize(5 * 256);
 
-    for (int i = 256, c = 0; i < 256 * 2; i++, c++) {
-        m_shared_data.false_colour_r[i] = 255 - c;
-        m_shared_data.false_colour_g[i] = 255;
-        m_shared_data.false_colour_b[i] = 0;
-    }
+        for (int i = 0; i < 256; i++) {
+            pcd.false_colour_r[i] = 255;
+            pcd.false_colour_g[i] = i;
+            pcd.false_colour_b[i] = 0;
+        }
 
-    for (int i = 256 * 2, c = 0; i < 256 * 3; i++, c++) {
-        m_shared_data.false_colour_r[i] = 0;
-        m_shared_data.false_colour_g[i] = 255;
-        m_shared_data.false_colour_b[i] = c;
-    }
+        for (int i = 256, c = 0; i < 256 * 2; i++, c++) {
+            pcd.false_colour_r[i] = 255 - c;
+            pcd.false_colour_g[i] = 255;
+            pcd.false_colour_b[i] = 0;
+        }
 
-    for (int i = 256 * 3, c = 0; i < 256 * 4; i++, c++) {
-        m_shared_data.false_colour_r[i] = 0;
-        m_shared_data.false_colour_g[i] = 255 - c;
-        m_shared_data.false_colour_b[i] = 255;
-    }
+        for (int i = 256 * 2, c = 0; i < 256 * 3; i++, c++) {
+            pcd.false_colour_r[i] = 0;
+            pcd.false_colour_g[i] = 255;
+            pcd.false_colour_b[i] = c;
+        }
 
-    for (int i = 256 * 4, c = 0; i < 256 * 5; i++, c++) {
-        m_shared_data.false_colour_r[i] = c;
-        m_shared_data.false_colour_g[i] = 0;
-        m_shared_data.false_colour_b[i] = 255;
+        for (int i = 256 * 3, c = 0; i < 256 * 4; i++, c++) {
+            pcd.false_colour_r[i] = 0;
+            pcd.false_colour_g[i] = 255 - c;
+            pcd.false_colour_b[i] = 255;
+        }
+
+        for (int i = 256 * 4, c = 0; i < 256 * 5; i++, c++) {
+            pcd.false_colour_r[i] = c;
+            pcd.false_colour_g[i] = 0;
+            pcd.false_colour_b[i] = 255;
+        }
     }
 }
 
@@ -259,14 +263,15 @@ bool MainWindow::OpenFile(int idx)
 
         wxFileName::SplitPath(dialog.GetPath(), &path, &name, &ext);
 
-        m_shared_data.filename[idx] = dialog.GetPath().ToStdString();
+        PointCloudData &pcd = m_point_cloud_data[idx];
+        pcd.filename = dialog.GetPath().ToStdString();
 
-        if (ReadPLYPoints(m_shared_data.filename[idx], &m_shared_data.point[idx], nullptr, nullptr)) {
-            m_file_txt[idx]->SetLabel(dialog.GetPath());
-            m_canvas[idx]->LoadPoints(m_shared_data.point[idx]);
+        if (ReadPLYPoints(pcd.filename, &pcd.point, nullptr, nullptr)) {
+            m_file_txt[idx]->SetLabel(pcd.filename);
+            m_canvas[idx]->LoadPoints(idx);
             m_canvas[idx]->Enable();
         } else {
-            wxMessageDialog *dial = new wxMessageDialog(NULL, "Error opening: " + m_shared_data.filename[idx], "Error", wxOK);
+            wxMessageDialog *dial = new wxMessageDialog(NULL, "Error opening: " + pcd.filename, "Error", wxOK);
             dial->ShowModal();
             return false;
         }
@@ -275,19 +280,19 @@ bool MainWindow::OpenFile(int idx)
 
         EnableAllExceptStatus(true);
 
-        m_shared_data.table[idx].resize(m_shared_data.point[idx].size());
+        pcd.table.resize(pcd.point.size());
 
-        for (size_t i = 0; i < m_shared_data.point[idx].size(); i++) {
-            m_shared_data.table[idx][i] = i;
+        for (size_t i = 0; i < pcd.point.size(); i++) {
+            pcd.table[i] = i;
         }
 
-        random_shuffle(m_shared_data.table[idx].begin(), m_shared_data.table[idx].end(), MyRandRange);
+        random_shuffle(pcd.table.begin(), pcd.table.end(), MyRandRange);
 
-        if (!m_shared_data.point[0].empty() && !m_shared_data.point[1].empty()) {
-            m_merged_view->LoadPointsForFastview(m_shared_data.point[0], m_shared_data.point[1]);
+        if (!m_point_cloud_data[0].point.empty() && !m_point_cloud_data[1].point.empty()) {
+            m_merged_view->LoadPointsForFastview(m_point_cloud_data[0].point, m_point_cloud_data[1].point);
         }
 
-        FalseColourPointCloud(m_shared_data.point[idx], m_shared_data.false_colour[idx]);
+        FalseColourPointCloud(idx);
 
         m_canvas[idx]->Draw();
 
@@ -309,7 +314,7 @@ void MainWindow::OpenSecondFile(wxCommandEvent& event)
 
 void MainWindow::OnTimer(wxTimerEvent& event)
 {
-    if (!m_shared_data.point[0].empty() && !m_shared_data.point[1].empty()) {
+    if (!m_point_cloud_data[0].point.empty() && !m_point_cloud_data[1].point.empty()) {
         m_viewmerge_btn->Enable();
     } else {
         m_viewmerge_btn->Disable();
@@ -360,7 +365,7 @@ void MainWindow::OnTimer(wxTimerEvent& event)
 
 void MainWindow::RegisterPointCloud(wxCommandEvent& event)
 {
-    ICP icp(m_shared_data);
+    ICP icp(m_point_cloud_data);
     Eigen::Matrix4d initial_transform, icp_transform, tmp_matrix;
     ICPDialog* dialog = new ICPDialog(NULL);
 
@@ -393,7 +398,7 @@ void MainWindow::RegisterPointCloud(wxCommandEvent& event)
         m_status->AppendText("\n");
     }
 
-    PointOP::ApplyTransform(m_shared_data.point[0], initial_transform);
+    PointOP::ApplyTransform(m_point_cloud_data[0].point, initial_transform);
 
     // Resize the m_status box, so the user can read it better
     int w, h;
@@ -413,7 +418,7 @@ void MainWindow::RegisterPointCloud(wxCommandEvent& event)
         icp.SetwxApp(m_app);
         icp.SetLTS(dialog->GetLTS());
         icp.SetMaxPoints(dialog->GetMaxPoints());
-        icp.SetPoints(m_shared_data.point[0], m_shared_data.point[1],
+        icp.SetPoints(m_point_cloud_data[0].point, m_point_cloud_data[1].point,
             dialog->GetInitialOutlierDist());
         icp.Seteps(dialog->Geteps());
 
@@ -469,9 +474,9 @@ void MainWindow::RegisterPointCloud(wxCommandEvent& event)
         }
     }
 
-    PointOP::ApplyTransform(m_shared_data.point[0], icp_transform);
+    PointOP::ApplyTransform(m_point_cloud_data[0].point, icp_transform);
 
-    m_canvas[0]->LoadPoints(m_shared_data.point[0]);
+    m_canvas[0]->LoadPoints(0);
 
     m_transform = icp_transform * initial_transform;
 
@@ -495,7 +500,7 @@ void MainWindow::RegisterPointCloud(wxCommandEvent& event)
     m_canvas[0]->Enable();
     m_canvas[1]->Enable();
 
-    m_merged_view->LoadPointsForFastview(m_shared_data.point[0], m_shared_data.point[1]);
+    m_merged_view->LoadPointsForFastview(m_point_cloud_data[0].point, m_point_cloud_data[1].point);
 
     wxMessageDialog* d = new wxMessageDialog(this, "Registration complete!", "Complete",
         wxOK | wxICON_EXCLAMATION);
@@ -565,7 +570,7 @@ void MainWindow::SaveAs(bool save_matrix_only)
             SaveMatrixToFile(matrix_file);
 
             bool ok = ReadPLYPoints(
-                m_shared_data.filename[0],
+                m_point_cloud_data[0].filename,
                 nullptr,
                 &output_file,
                 &m_transform);
@@ -677,10 +682,12 @@ void MainWindow::SaveMatrixToFile(const wxString& dialog_path)
     m_status->AppendText("Transformation matrix saved to: " + full_path + "\n");
 }
 
-void MainWindow::FalseColourPointCloud(std::vector<Point>& points,
-    std::vector<RGB>& false_colour)
+void MainWindow::FalseColourPointCloud(int idx)
 {
-    false_colour.resize(points.size());
+    PointCloudData &pcd = m_point_cloud_data[idx];
+    const std::vector<Point> &points = pcd.point;
+
+    pcd.false_colour.resize(points.size());
 
     std::vector<float> zs(points.size());
     for (size_t i = 0; i < points.size(); i++) {
@@ -699,23 +706,26 @@ void MainWindow::FalseColourPointCloud(std::vector<Point>& points,
         }
 
         if (points[i].z < min_z) {
-            r = m_shared_data.false_colour_r[0];
-            g = m_shared_data.false_colour_g[0];
-            b = m_shared_data.false_colour_b[0];
+            r = pcd.false_colour_r[0];
+            g = pcd.false_colour_g[0];
+            b = pcd.false_colour_b[0];
         } else if (points[i].z > max_z) {
-            r = m_shared_data.false_colour_r.back();
-            g = m_shared_data.false_colour_g.back();
-            b = m_shared_data.false_colour_b.back();
+            r = pcd.false_colour_r.back();
+            g = pcd.false_colour_g.back();
+            b = pcd.false_colour_b.back();
         } else {
-            int idx = (points[i].z - min_z) / (max_z - min_z) * 256 * 5;
+            int color_idx = (points[i].z - min_z) / (max_z - min_z) * 256 * 5;
 
-            r = m_shared_data.false_colour_r[idx];
-            g = m_shared_data.false_colour_g[idx];
-            b = m_shared_data.false_colour_b[idx];
+            r = pcd.false_colour_r[color_idx];
+            g = pcd.false_colour_g[color_idx];
+            b = pcd.false_colour_b[color_idx];
         }
 
-        false_colour[i].r = r;
-        false_colour[i].g = g;
-        false_colour[i].b = b;
+        pcd.false_colour[i].r = r;
+        pcd.false_colour[i].g = g;
+        pcd.false_colour[i].b = b;
     }
+
+    pcd.false_colour_min_z = min_z;
+    pcd.false_colour_max_z = max_z;
 }

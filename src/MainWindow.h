@@ -17,7 +17,7 @@ public:
 
 private:
     void InitFalseColour();
-    void FalseColourPointCloud(std::vector<Point>& points, std::vector<RGB>& false_colour);
+    void FalseColourPointCloud(int idx);
 
     void OnQuit(wxCommandEvent& event);
     void OnQuit2(wxCloseEvent& event);
@@ -40,7 +40,7 @@ private:
     void EnableAllExceptStatus(bool enable = true);
 
 private:
-    SharedData m_shared_data;
+    std::array<PointCloudData, 2> m_point_cloud_data;
 
     wxMenuBar* m_menubar;
     wxMenu *m_file, *m_help;

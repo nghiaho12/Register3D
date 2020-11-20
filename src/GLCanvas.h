@@ -7,6 +7,7 @@
 #include "ZPR.h"
 #include <iostream>
 #include <vector>
+#include <array>
 #include <wx/dcclient.h>
 #include <wx/glcanvas.h>
 
@@ -15,7 +16,7 @@ enum ModeType { STITCH_MODE,
 
 class GLCanvas : public wxGLCanvas {
 public:
-    GLCanvas(wxWindow* parent, wxWindowID id, ModeType mode, SharedData &shared_data);
+    GLCanvas(wxWindow* parent, wxWindowID id, ModeType mode, std::array<PointCloudData, 2> &pcd);
     bool Draw();
 
     void OnPaint(wxPaintEvent& event);
@@ -34,7 +35,7 @@ public:
     void CentreView();
     void ViewTopdown();
     void SetwxTextCtrl(wxTextCtrl* t); // Used for m_text feedback from ICP
-    void LoadPoints(std::vector<Point> points);
+    void LoadPoints(int idx);
     void LoadPointsForFastview(std::vector<Point>& p1, std::vector<Point>& p2);
 
     DECLARE_EVENT_TABLE()
@@ -54,7 +55,7 @@ private:
 
 private:
     wxGLContext m_context;
-    SharedData &m_shared_data;
+    std::array<PointCloudData, 2> &m_point_cloud_data;
 
     int m_idx = 0; // first or second
 

@@ -15,10 +15,10 @@ END_EVENT_TABLE()
 
 static int attrib_list[] = { WX_GL_RGBA, WX_GL_DOUBLEBUFFER, WX_GL_DEPTH_SIZE, 16, 0};
 
-GLCanvas::GLCanvas(wxWindow* parent, wxWindowID id, ModeType mode, SharedData &params)
+GLCanvas::GLCanvas(wxWindow* parent, wxWindowID id, ModeType mode, std::array<PointCloudData, 2> &pcd)
     : wxGLCanvas(parent, id, attrib_list, wxDefaultPosition, wxSize(200, 200)),
     m_context(this),
-    m_shared_data(params)
+    m_point_cloud_data(pcd)
 {
     m_move_point_on = false;
     m_last_mouse_x = -1;
@@ -242,31 +242,31 @@ void GLCanvas::RenderScene()
             // Bring back to normal operations
             glBindBuffer(GL_ARRAY_BUFFER, 0);
         } else {
-            if (!m_shared_data.point[m_idx].empty()) {
+            if (!m_point_cloud_data[m_idx].point.empty()) {
                 glEnableClientState(GL_COLOR_ARRAY);
                 glEnableClientState(GL_VERTEX_ARRAY);
 
                 if (m_use_mono_colour) {
-                    glColorPointer(3, GL_UNSIGNED_BYTE, 0, m_shared_data.false_colour[m_idx].data());
+                    glColorPointer(3, GL_UNSIGNED_BYTE, 0, m_point_cloud_data[m_idx].false_colour.data());
                 } else {
-                    glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_shared_data.point[m_idx][0].r);
+                    glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_point_cloud_data[m_idx].point[0].r);
                 }
 
-                glVertexPointer(3, GL_FLOAT, sizeof(Point), m_shared_data.point[m_idx].data());
-                glDrawArrays(GL_POINTS, 0, m_shared_data.point[m_idx].size());
+                glVertexPointer(3, GL_FLOAT, sizeof(Point), m_point_cloud_data[m_idx].point.data());
+                glDrawArrays(GL_POINTS, 0, m_point_cloud_data[m_idx].point.size());
 
                 glDisableClientState(GL_COLOR_ARRAY);
                 glDisableClientState(GL_VERTEX_ARRAY);
             }
 
-            if (m_idx == 1 && !m_shared_data.point[m_idx].empty()) {
+            if (m_idx == 1 && !m_point_cloud_data[m_idx].point.empty()) {
                 if (m_mask_spheres && m_spheres.size() == 1) {
                     float RadiusSq = m_spheres[0].radius * m_spheres[0].radius;
 
                     glBegin(GL_POINTS);
 
-                    for (size_t i = 0; i < m_shared_data.point[1].size(); i++) {
-                        Point& P = m_shared_data.point[1][i];
+                    for (size_t i = 0; i < m_point_cloud_data[1].point.size(); i++) {
+                        Point& P = m_point_cloud_data[1].point[i];
 
                         float dx = P.x - m_spheres[0].x;
                         float dy = P.y - m_spheres[0].y;
@@ -285,8 +285,8 @@ void GLCanvas::RenderScene()
 
                     glBegin(GL_POINTS);
 
-                    for (size_t i = 0; i < m_shared_data.point[1].size(); i++) {
-                        Point& P = m_shared_data.point[1][i];
+                    for (size_t i = 0; i < m_point_cloud_data[1].point.size(); i++) {
+                        Point& P = m_point_cloud_data[1].point[i];
 
                         float dx1 = P.x - m_spheres[0].x;
                         float dy1 = P.y - m_spheres[0].y;
@@ -588,8 +588,10 @@ void GLCanvas::ClearSphere() { m_spheres.clear(); }
 
 bool GLCanvas::GetIsFocused() { return m_is_focused; }
 
-void GLCanvas::LoadPoints(std::vector<Point> points)
+void GLCanvas::LoadPoints(int idx)
 {
+    PointCloudData &pcd = m_point_cloud_data[idx];
+    std::vector<Point> &points = pcd.point;
     SetCurrent(m_context);
 
     random_shuffle(points.begin(), points.end(), MyRandRange);
@@ -652,24 +654,24 @@ void GLCanvas::LoadPoints(std::vector<Point> points)
 
     // False colour
     for (size_t i = 0; i < limit; i++) {
-        if (points[i].z <= m_shared_data.false_colour_min_z) {
-            false_colour[i].a = m_shared_data.false_colour_r[0];
-            false_colour[i].b = m_shared_data.false_colour_g[0];
-            false_colour[i].c = m_shared_data.false_colour_b[0];
-        } else if (points[i].z >= m_shared_data.false_colour_max_z) {
-            false_colour[i].a = m_shared_data.false_colour_r[255 * 5 - 1];
-            false_colour[i].b = m_shared_data.false_colour_g[255 * 5 - 1];
-            false_colour[i].c = m_shared_data.false_colour_b[255 * 5 - 1];
+        if (points[i].z < pcd.false_colour_min_z) {
+            false_colour[i].a = pcd.false_colour_r[0];
+            false_colour[i].b = pcd.false_colour_g[0];
+            false_colour[i].c = pcd.false_colour_b[0];
+        } else if (points[i].z >= pcd.false_colour_max_z) {
+            false_colour[i].a = pcd.false_colour_r[255 * 5 - 1];
+            false_colour[i].b = pcd.false_colour_g[255 * 5 - 1];
+            false_colour[i].c = pcd.false_colour_b[255 * 5 - 1];
         } else {
-            int idx = (points[i].z - m_shared_data.false_colour_min_z) / (m_shared_data.false_colour_max_z - m_shared_data.false_colour_min_z) * 255 * 5;
+            int color_idx = (points[i].z - pcd.false_colour_min_z) / (pcd.false_colour_max_z - pcd.false_colour_min_z) * 255 * 5;
 
-            if (idx < 0) {
+            if (color_idx < 0) {
                 throw std::runtime_error("should not reach here");
             }
 
-            false_colour[i].a = m_shared_data.false_colour_r[idx];
-            false_colour[i].b = m_shared_data.false_colour_g[idx];
-            false_colour[i].c = m_shared_data.false_colour_b[idx];
+            false_colour[i].a = pcd.false_colour_r[color_idx];
+            false_colour[i].b = pcd.false_colour_g[color_idx];
+            false_colour[i].c = pcd.false_colour_b[color_idx];
         }
     }
 
@@ -772,7 +774,7 @@ std::vector<Point>& GLCanvas::GetControlPoints() { return m_control_points; }
 
 void GLCanvas::RenderMerged()
 {
-    if (m_shared_data.point[0].size() == 0 && m_shared_data.point[1].size() == 0) {
+    if (m_point_cloud_data[0].point.size() == 0 && m_point_cloud_data[1].point.size() == 0) {
         return;
     }
 
@@ -805,17 +807,17 @@ void GLCanvas::RenderMerged()
             glColor3f(1.0, 0.0, 0.0);
         }
 
-        glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_shared_data.point[0][0].r);
-        glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_shared_data.point[0][0]);
-        glDrawArrays(GL_POINTS, 0, m_shared_data.point[0].size());
+        glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_point_cloud_data[0].point[0].r);
+        glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_point_cloud_data[0].point[0]);
+        glDrawArrays(GL_POINTS, 0, m_point_cloud_data[0].point.size());
 
         if (m_use_mono_colour) {
             glColor3f(0.0, 1.0, 0.0);
         }
 
-        glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_shared_data.point[1][0].r);
-        glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_shared_data.point[1][0]);
-        glDrawArrays(GL_POINTS, 0, m_shared_data.point[1].size());
+        glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(Point), &m_point_cloud_data[1].point[0].r);
+        glVertexPointer(3, GL_FLOAT, sizeof(Point), &m_point_cloud_data[1].point[0]);
+        glDrawArrays(GL_POINTS, 0, m_point_cloud_data[1].point.size());
     }
 
     // Axis
@@ -834,8 +836,8 @@ void GLCanvas::SetwxTextCtrl(wxTextCtrl* t) { m_text = t; }
 
 void GLCanvas::LoadPointsForFastview(std::vector<Point>& p1, std::vector<Point>& p2)
 {
-    reverseable_shuffle_forward(p1, m_shared_data.table[0]);
-    reverseable_shuffle_forward(p2, m_shared_data.table[1]);
+    reverseable_shuffle_forward(p1, m_point_cloud_data[0].table);
+    reverseable_shuffle_forward(p2, m_point_cloud_data[1].table);
 
     if (p1.size() < MAX_POINTS_ON_GPU) {
         m_point1_decimated.resize(p1.size());
@@ -857,8 +859,8 @@ void GLCanvas::LoadPointsForFastview(std::vector<Point>& p1, std::vector<Point>&
         m_point2_decimated[i] = p2[i];
     }
 
-    reverseable_shuffle_backward(p1, m_shared_data.table[0]);
-    reverseable_shuffle_backward(p2, m_shared_data.table[1]);
+    reverseable_shuffle_backward(p1, m_point_cloud_data[0].table);
+    reverseable_shuffle_backward(p2, m_point_cloud_data[1].table);
 }
 
 bool GLCanvas::Draw()

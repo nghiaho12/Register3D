@@ -6,6 +6,7 @@ The main TrICP algorithm class. Designed to iteract with the GUI.
 
 #include <Eigen/Dense>
 #include <wx/wx.h>
+#include <array>
 
 #include "Global.h"
 #include "ICPPoint.h"
@@ -14,7 +15,7 @@ The main TrICP algorithm class. Designed to iteract with the GUI.
 
 class ICP {
 public:
-    ICP(SharedData &params);
+    ICP(std::array<PointCloudData, 2> &pcd);
 
     void SetLTS(float a);
     void SetPoints(std::vector<Point>& P1, std::vector<Point>& P2, float dist_threshold);
@@ -29,7 +30,7 @@ public:
 private:
 
 private:
-    SharedData &m_shared_data;
+    std::array<PointCloudData, 2> &m_point_cloud_data;
 
     std::vector<ICPPoint> m_points1;
     std::vector<Point> m_points2;
