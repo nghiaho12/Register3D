@@ -59,5 +59,7 @@ private:
     int m_init_sash;
     Eigen::Matrix4d m_transform; // Final transformation
 
+    std::vector<RGB> m_false_colour_palette;
+
     DECLARE_EVENT_TABLE()
 };

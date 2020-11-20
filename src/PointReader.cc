@@ -196,6 +196,13 @@ bool ReadPLYPoints(
 
     std::vector<char> bytes(property_bytes);
 
+    std::cout << "x_offset: " << x_offset << "\n";
+    std::cout << "y_offset: " << y_offset << "\n";
+    std::cout << "z_offset: " << z_offset << "\n";
+    std::cout << "red_offset: " << red_offset << "\n";
+    std::cout << "green_offset: " << green_offset << "\n";
+    std::cout << "blue_offset: " << blue_offset << "\n";
+
     for (int i=0; i < num_vertex; i++) {
         Point p;
 

@@ -186,42 +186,36 @@ MainWindow::MainWindow()
 
 void MainWindow::InitFalseColour()
 {
-    for (size_t k=0; k < m_point_cloud_data.size(); k++) {
-        PointCloudData &pcd = m_point_cloud_data[k];
+    m_false_colour_palette.resize(5 * 256);
 
-        pcd.false_colour_r.resize(5 * 256);
-        pcd.false_colour_g.resize(5 * 256);
-        pcd.false_colour_b.resize(5 * 256);
+    for (int i = 0; i < 256; i++) {
+        m_false_colour_palette[i].r = 255;
+        m_false_colour_palette[i].g = i;
+        m_false_colour_palette[i].b = 0;
+    }
 
-        for (int i = 0; i < 256; i++) {
-            pcd.false_colour_r[i] = 255;
-            pcd.false_colour_g[i] = i;
-            pcd.false_colour_b[i] = 0;
-        }
+    for (int i = 256, c = 0; i < 256 * 2; i++, c++) {
+        m_false_colour_palette[i].r = 255 - c;
+        m_false_colour_palette[i].g = 255;
+        m_false_colour_palette[i].b = 0;
+    }
 
-        for (int i = 256, c = 0; i < 256 * 2; i++, c++) {
-            pcd.false_colour_r[i] = 255 - c;
-            pcd.false_colour_g[i] = 255;
-            pcd.false_colour_b[i] = 0;
-        }
+    for (int i = 256 * 2, c = 0; i < 256 * 3; i++, c++) {
+        m_false_colour_palette[i].r = 0;
+        m_false_colour_palette[i].g = 255;
+        m_false_colour_palette[i].b = c;
+    }
 
-        for (int i = 256 * 2, c = 0; i < 256 * 3; i++, c++) {
-            pcd.false_colour_r[i] = 0;
-            pcd.false_colour_g[i] = 255;
-            pcd.false_colour_b[i] = c;
-        }
+    for (int i = 256 * 3, c = 0; i < 256 * 4; i++, c++) {
+        m_false_colour_palette[i].r = 0;
+        m_false_colour_palette[i].g = 255 - c;
+        m_false_colour_palette[i].b = 255;
+    }
 
-        for (int i = 256 * 3, c = 0; i < 256 * 4; i++, c++) {
-            pcd.false_colour_r[i] = 0;
-            pcd.false_colour_g[i] = 255 - c;
-            pcd.false_colour_b[i] = 255;
-        }
-
-        for (int i = 256 * 4, c = 0; i < 256 * 5; i++, c++) {
-            pcd.false_colour_r[i] = c;
-            pcd.false_colour_g[i] = 0;
-            pcd.false_colour_b[i] = 255;
-        }
+    for (int i = 256 * 4, c = 0; i < 256 * 5; i++, c++) {
+        m_false_colour_palette[i].r = c;
+        m_false_colour_palette[i].g = 0;
+        m_false_colour_palette[i].b = 255;
     }
 }
 
@@ -267,6 +261,20 @@ bool MainWindow::OpenFile(int idx)
         pcd.filename = dialog.GetPath().ToStdString();
 
         if (ReadPLYPoints(pcd.filename, &pcd.point, nullptr, nullptr)) {
+            FalseColourPointCloud(idx);
+
+            // initialzie random shuffle table
+            pcd.table.resize(pcd.point.size());
+            for (size_t i = 0; i < pcd.point.size(); i++) {
+                pcd.table[i] = i;
+            }
+
+            random_shuffle(pcd.table.begin(), pcd.table.end(), MyRandRange);
+
+            if (!m_point_cloud_data[0].point.empty() && !m_point_cloud_data[1].point.empty()) {
+                m_merged_view->LoadPointsForFastview(m_point_cloud_data[0].point, m_point_cloud_data[1].point);
+            }
+
             m_file_txt[idx]->SetLabel(pcd.filename);
             m_canvas[idx]->LoadPoints(idx);
             m_canvas[idx]->Enable();
@@ -280,19 +288,6 @@ bool MainWindow::OpenFile(int idx)
 
         EnableAllExceptStatus(true);
 
-        pcd.table.resize(pcd.point.size());
-
-        for (size_t i = 0; i < pcd.point.size(); i++) {
-            pcd.table[i] = i;
-        }
-
-        random_shuffle(pcd.table.begin(), pcd.table.end(), MyRandRange);
-
-        if (!m_point_cloud_data[0].point.empty() && !m_point_cloud_data[1].point.empty()) {
-            m_merged_view->LoadPointsForFastview(m_point_cloud_data[0].point, m_point_cloud_data[1].point);
-        }
-
-        FalseColourPointCloud(idx);
 
         m_canvas[idx]->Draw();
 
@@ -700,32 +695,30 @@ void MainWindow::FalseColourPointCloud(int idx)
 
     for (size_t i = 0; i < points.size(); i++) {
         int r, g, b;
+        float z = points[i].z;
 
-        if (!std::isfinite(points[i].z)) {
+        if (!std::isfinite(z)) {
             continue;
         }
 
-        if (points[i].z < min_z) {
-            r = pcd.false_colour_r[0];
-            g = pcd.false_colour_g[0];
-            b = pcd.false_colour_b[0];
-        } else if (points[i].z > max_z) {
-            r = pcd.false_colour_r.back();
-            g = pcd.false_colour_g.back();
-            b = pcd.false_colour_b.back();
+        if (z < min_z) {
+            r = m_false_colour_palette[0].r;
+            g = m_false_colour_palette[0].g;
+            b = m_false_colour_palette[0].b;
+        } else if (z >= max_z) {
+            r = m_false_colour_palette.back().r;
+            g = m_false_colour_palette.back().g;
+            b = m_false_colour_palette.back().b;
         } else {
-            int color_idx = (points[i].z - min_z) / (max_z - min_z) * 256 * 5;
+            int color_idx = (z - min_z) / (max_z - min_z) * 256 * 5;
 
-            r = pcd.false_colour_r[color_idx];
-            g = pcd.false_colour_g[color_idx];
-            b = pcd.false_colour_b[color_idx];
+            r = m_false_colour_palette.at(color_idx).r;
+            g = m_false_colour_palette.at(color_idx).g;
+            b = m_false_colour_palette.at(color_idx).b;
         }
 
         pcd.false_colour[i].r = r;
         pcd.false_colour[i].g = g;
         pcd.false_colour[i].b = b;
     }
-
-    pcd.false_colour_min_z = min_z;
-    pcd.false_colour_max_z = max_z;
 }

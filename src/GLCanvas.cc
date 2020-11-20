@@ -594,7 +594,8 @@ void GLCanvas::LoadPoints(int idx)
     std::vector<Point> &points = pcd.point;
     SetCurrent(m_context);
 
-    random_shuffle(points.begin(), points.end(), MyRandRange);
+    reverseable_shuffle_forward(points, m_point_cloud_data[idx].table);
+    reverseable_shuffle_forward(pcd.false_colour, m_point_cloud_data[idx].table);
 
     // Clear previous buffer if any
     if (m_vertex_array_id > 0) {
@@ -654,25 +655,9 @@ void GLCanvas::LoadPoints(int idx)
 
     // False colour
     for (size_t i = 0; i < limit; i++) {
-        if (points[i].z < pcd.false_colour_min_z) {
-            false_colour[i].a = pcd.false_colour_r[0];
-            false_colour[i].b = pcd.false_colour_g[0];
-            false_colour[i].c = pcd.false_colour_b[0];
-        } else if (points[i].z >= pcd.false_colour_max_z) {
-            false_colour[i].a = pcd.false_colour_r[255 * 5 - 1];
-            false_colour[i].b = pcd.false_colour_g[255 * 5 - 1];
-            false_colour[i].c = pcd.false_colour_b[255 * 5 - 1];
-        } else {
-            int color_idx = (points[i].z - pcd.false_colour_min_z) / (pcd.false_colour_max_z - pcd.false_colour_min_z) * 255 * 5;
-
-            if (color_idx < 0) {
-                throw std::runtime_error("should not reach here");
-            }
-
-            false_colour[i].a = pcd.false_colour_r[color_idx];
-            false_colour[i].b = pcd.false_colour_g[color_idx];
-            false_colour[i].c = pcd.false_colour_b[color_idx];
-        }
+        false_colour[i].a = pcd.false_colour[i].r;
+        false_colour[i].b = pcd.false_colour[i].g;
+        false_colour[i].c = pcd.false_colour[i].b;
     }
 
     bool err = false;
