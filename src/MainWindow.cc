@@ -690,6 +690,7 @@ void MainWindow::FalseColourPointCloud(int idx)
     }
     std::sort(zs.begin(), zs.end());
 
+    // Exclude a small percentage of the botton and top
     float min_z = zs[static_cast<size_t>(zs.size()*0.01)];
     float max_z = zs[static_cast<size_t>(zs.size()*0.99)];
 
@@ -701,21 +702,19 @@ void MainWindow::FalseColourPointCloud(int idx)
             continue;
         }
 
-        if (z < min_z) {
-            r = m_false_colour_palette[0].r;
-            g = m_false_colour_palette[0].g;
-            b = m_false_colour_palette[0].b;
-        } else if (z >= max_z) {
-            r = m_false_colour_palette.back().r;
-            g = m_false_colour_palette.back().g;
-            b = m_false_colour_palette.back().b;
-        } else {
-            int color_idx = (z - min_z) / (max_z - min_z) * 256 * 5;
+        int color_idx = (z - min_z) / (max_z - min_z) * 256 * 5;
 
-            r = m_false_colour_palette.at(color_idx).r;
-            g = m_false_colour_palette.at(color_idx).g;
-            b = m_false_colour_palette.at(color_idx).b;
+        if (color_idx < 0) {
+            color_idx =0 ;
         }
+
+        if (color_idx >= m_false_colour_palette.size()) {
+            color_idx = m_false_colour_palette.size() - 1;
+        }
+
+        r = m_false_colour_palette.at(color_idx).r;
+        g = m_false_colour_palette.at(color_idx).g;
+        b = m_false_colour_palette.at(color_idx).b;
 
         pcd.false_colour[i].r = r;
         pcd.false_colour[i].g = g;
